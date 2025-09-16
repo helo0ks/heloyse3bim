@@ -2,7 +2,7 @@
 DROP TABLE IF EXISTS produto;
 -- Script para criar a tabela produto (pelúcias) no PostgreSQL
 CREATE TABLE IF NOT EXISTS produto (
-    id SERIAL PRIMARY KEY,
+    id INT PRIMARY KEY,
     nome VARCHAR(100) NOT NULL,
     descricao TEXT,
     preco NUMERIC(10,2) NOT NULL,

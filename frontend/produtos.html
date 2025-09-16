@@ -18,6 +18,9 @@
     <div id="secaoProdutos">
         <h1>Cadastro de Produtos</h1>
     <form id="formProduto" autocomplete="off">
+            <label for="id">ID:</label>
+            <input type="number" id="id" name="id" min="1" required><br>
+            <button type="button" id="btnBuscarId">Buscar por ID</button><br>
             <label for="nome">Nome:</label>
             <input type="text" id="nome" name="nome" required><br>
             <label for="descricao">Descrição:</label>
@@ -28,7 +31,8 @@
             <input type="text" id="imagem" name="imagem"><br>
             <label for="estoque">Estoque:</label>
             <input type="number" id="estoque" name="estoque" min="0" required><br>
-            <button type="submit">Cadastrar Produto</button>
+            <span id="msgIdNaoExiste" style="display:none;color:#c62828;font-weight:bold;">ID não existente</span><br>
+            <button type="submit" id="btnCadastrarProduto" style="display:none;">Cadastrar Produto</button>
         </form>
 
         <h2>Produtos Cadastrados</h2>

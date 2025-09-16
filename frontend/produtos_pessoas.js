@@ -22,10 +22,54 @@ btnPessoas.onclick = () => {
     btnPessoas.style.background = '#e573b5';
 };
 
+
 // --- CRUD PRODUTOS ---
 window.onload = function() {
     listarProdutos();
     listarPessoas();
+    bloquearCamposProduto(true);
+};
+
+function bloquearCamposProduto(bloquear) {
+    const campos = ['nome', 'descricao', 'preco', 'imagem', 'estoque'];
+    campos.forEach(id => {
+        document.getElementById(id).disabled = bloquear;
+    });
+    document.querySelector('#formProduto button[type="submit"]').disabled = bloquear;
+}
+
+// Habilita campo de ID para digitação
+document.getElementById('id').disabled = false;
+
+// Buscar por ID
+document.getElementById('btnBuscarId').onclick = async function() {
+    const id = document.getElementById('id').value;
+    if (!id) return alert('Digite um ID para buscar!');
+    const token = localStorage.getItem('token');
+    try {
+        const resp = await fetch(`${apiProdutos}/${id}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (resp.ok) {
+            const produto = await resp.json();
+            document.getElementById('nome').value = produto.nome;
+            document.getElementById('descricao').value = produto.descricao;
+            document.getElementById('preco').value = produto.preco;
+            document.getElementById('imagem').value = produto.imagem;
+            document.getElementById('estoque').value = produto.estoque;
+            editandoProdutoId = id;
+            document.getElementById('formProduto').querySelector('button[type="submit"]').textContent = 'Salvar Alteração';
+        } else {
+            // Não existe, limpa campos para cadastro
+            document.getElementById('formProduto').reset();
+            document.getElementById('id').value = id;
+            editandoProdutoId = null;
+            document.getElementById('formProduto').querySelector('button[type="submit"]').textContent = 'Cadastrar Produto';
+        }
+        bloquearCamposProduto(false);
+    } catch (e) {
+        alert('Erro ao buscar produto!');
+    }
 };
 
 
@@ -34,6 +78,7 @@ let editandoProdutoId = null;
 document.getElementById('formProduto').addEventListener('submit', async function(e) {
     e.preventDefault();
     const produto = {
+        id: parseInt(document.getElementById('id').value),
         nome: document.getElementById('nome').value,
         descricao: document.getElementById('descricao').value,
         preco: parseFloat(document.getElementById('preco').value),
@@ -56,6 +101,7 @@ document.getElementById('formProduto').addEventListener('submit', async function
         await cadastrarProduto(produto);
     }
     this.reset();
+    bloquearCamposProduto(true);
     listarProdutos();
 });
 

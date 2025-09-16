@@ -47,13 +47,13 @@ exports.excluirProduto = async (req, res) => {
 };
 const { pool } = require('../db');
 
-// Cadastrar novo produto
+// Cadastrar novo produto (com ID manual)
 exports.cadastrarProduto = async (req, res) => {
   try {
-    const { nome, descricao, preco, imagem, estoque } = req.body;
+    const { id, nome, descricao, preco, imagem, estoque } = req.body;
     const result = await pool.query(
-      'INSERT INTO produto (nome, descricao, preco, imagem, estoque) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [nome, descricao, preco, imagem, estoque]
+      'INSERT INTO produto (id, nome, descricao, preco, imagem, estoque) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [id, nome, descricao, preco, imagem, estoque]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
