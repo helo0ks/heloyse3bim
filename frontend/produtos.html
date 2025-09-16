@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Produtos - Loja Snoopy</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/crud.css">
+</head>
+<body>
+    <div id="main-content">
+    <div class="crud-selector">
+        <button id="btnProdutos" type="button">Gerenciar Produtos</button>
+        <button id="btnPessoas" type="button">Gerenciar Pessoas</button>
+    </div>
+    </div>
+
+    <div id="secaoProdutos">
+        <h1>Cadastro de Produtos</h1>
+    <form id="formProduto" autocomplete="off">
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required><br>
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao"></textarea><br>
+            <label for="preco">Preço:</label>
+            <input type="number" id="preco" name="preco" step="0.01" required><br>
+            <label for="imagem">URL da Imagem:</label>
+            <input type="text" id="imagem" name="imagem"><br>
+            <label for="estoque">Estoque:</label>
+            <input type="number" id="estoque" name="estoque" min="0" required><br>
+            <button type="submit">Cadastrar Produto</button>
+        </form>
+
+        <h2>Produtos Cadastrados</h2>
+        <table id="tabelaProdutos" border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Imagem</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Produtos serão inseridos aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <div id="secaoPessoas" style="display:none;">
+        <h1>Gerenciar Pessoas</h1>
+        <form id="formPessoa">
+            <label for="cpf">CPF:</label>
+            <input type="text" id="cpf" name="cpf" required maxlength="14"><br>
+            <label for="nomePessoa">Nome:</label>
+            <input type="text" id="nomePessoa" name="nomePessoa" required><br>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required><br>
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha"><br>
+            <label for="tipo">Tipo:</label>
+            <select id="tipo" name="tipo">
+                <option value="cliente">Cliente</option>
+                <option value="admin">Admin</option>
+            </select><br>
+            <button type="submit">Cadastrar/Atualizar Pessoa</button>
+        </form>
+
+        <h2>Pessoas Cadastradas</h2>
+        <table id="tabelaPessoas" border="1">
+            <thead>
+                <tr>
+                    <th>CPF</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Tipo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Pessoas serão inseridas aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="produtos_pessoas.js"></script>
+</body>
+</html>
