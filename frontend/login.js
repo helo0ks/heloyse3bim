@@ -28,6 +28,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
         setCookie('authToken', data.token, 7);
         setCookie('userType', data.usuario.tipo, 7);
         setCookie('userName', data.usuario.nome || data.usuario.email, 7);
+        setCookie('userCpf', data.usuario.cpf, 7);
         setCookie('isLoggedIn', 'true', 7);
         
         // Redireciona conforme o tipo

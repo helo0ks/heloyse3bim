@@ -707,7 +707,35 @@ footer {
 }
 
 .resumo-valores {
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.forma-pagamento-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem 0;
+  border-top: 1px solid #eee;
+}
+
+.forma-pagamento-section h3 {
+  margin-bottom: 0.8rem;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.forma-pagamento-select {
+  width: 100%;
+  padding: 0.8rem;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.forma-pagamento-select:focus {
+  outline: none;
+  border-color: #e573b5;
+  box-shadow: 0 0 0 3px rgba(229, 115, 181, 0.1);
 }
 
 .linha-valor {

@@ -630,3 +630,72 @@ footer {
         font-size: 0.9rem;
     }
 }
+
+/* Estilos específicos para CRUD de Pedidos */
+.produto-item, .forma-pagamento-item {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    align-items: center;
+    padding: 10px;
+    background: #f8f8f8;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.produto-select, .forma-pagamento-select {
+    flex: 2;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.quantidade-input, .preco-input, .valor-pago-input, .subtotal-input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.subtotal-input {
+    background-color: #f5f5f5;
+    font-weight: bold;
+    color: #2e7d32;
+}
+
+.btn-remover-produto, .btn-remover-forma {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.btn-remover-produto:hover, .btn-remover-forma:hover {
+    background: #c82333;
+}
+
+#produtosPedido, #formasPagamento {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 8px;
+    background: #fafafa;
+    margin-bottom: 10px;
+}
+
+#btnAdicionarProduto, #btnAdicionarFormaPagamento {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+#btnAdicionarProduto:hover, #btnAdicionarFormaPagamento:hover {
+    background: #218838;
+}

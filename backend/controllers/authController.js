@@ -20,9 +20,9 @@ exports.login = async (req, res) => {
     if (!senhaValida) {
       return res.status(401).json({ sucesso: false, mensagem: 'Senha incorreta.' });
     }
-    const token = jwt.sign({ id: user.id, email: user.email, tipo: user.tipo }, process.env.JWT_SECRET || 'segredo', { expiresIn: '2h' });
+    const token = jwt.sign({ cpf: user.cpf, email: user.email, tipo: user.tipo }, process.env.JWT_SECRET || 'segredo', { expiresIn: '2h' });
     res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
-    res.json({ sucesso: true, token, usuario: { id: user.id, nome: user.nome, email: user.email, tipo: user.tipo } });
+    res.json({ sucesso: true, token, usuario: { cpf: user.cpf, nome: user.nome, email: user.email, tipo: user.tipo } });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao fazer login.' });
   }
@@ -30,22 +30,39 @@ exports.login = async (req, res) => {
 
 exports.register = async (req, res) => {
   const { cpf, nome, email, senha } = req.body;
+  const client = await pool.connect();
+  
   try {
+    await client.query('BEGIN');
+    
     // Verifica se já existe CPF ou email cadastrado
-    const existeCpf = await pool.query('SELECT * FROM pessoa WHERE cpf = $1', [cpf]);
+    const existeCpf = await client.query('SELECT * FROM pessoa WHERE cpf = $1', [cpf]);
     if (existeCpf.rows.length > 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ sucesso: false, mensagem: 'CPF já cadastrado.' });
     }
-    const existeEmail = await pool.query('SELECT * FROM pessoa WHERE email = $1', [email]);
+    const existeEmail = await client.query('SELECT * FROM pessoa WHERE email = $1', [email]);
     if (existeEmail.rows.length > 0) {
+      await client.query('ROLLBACK');
       return res.status(400).json({ sucesso: false, mensagem: 'E-mail já cadastrado.' });
     }
+    
     const hash = await bcrypt.hash(senha, 10);
-    await pool.query('INSERT INTO pessoa (cpf, nome, email, senha, tipo) VALUES ($1, $2, $3, $4, $5)', [cpf, nome, email, hash, 'cliente']);
+    
+    // Inserir na tabela pessoa
+    await client.query('INSERT INTO pessoa (cpf, nome, email, senha, tipo) VALUES ($1, $2, $3, $4, $5)', [cpf, nome, email, hash, 'cliente']);
+    
+    // Inserir na tabela Cliente (relacionamento)
+    await client.query('INSERT INTO Cliente (PessoaCpfPessoa) VALUES ($1)', [cpf]);
+    
+    await client.query('COMMIT');
     res.json({ sucesso: true, mensagem: 'Cadastro realizado com sucesso!' });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.log('Erro no cadastro:', err);
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao cadastrar.' });
+  } finally {
+    client.release();
   }
 };
 

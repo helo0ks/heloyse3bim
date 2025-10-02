@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     carregarCarrinho();
     configurarEventos();
     exibirCarrinho();
+    carregarFormasPagamento();
     
     // Escutar mudanças no localStorage (para quando o carrinho for limpo em outras abas)
     window.addEventListener('storage', function(e) {
@@ -150,6 +151,30 @@ function atualizarValores() {
     document.getElementById('total').textContent = `R$ ${total.toFixed(2)}`;
 }
 
+// Carregar formas de pagamento
+async function carregarFormasPagamento() {
+    try {
+        const response = await fetch('http://localhost:3001/pedidos/formas-pagamento-publicas');
+        if (response.ok) {
+            const formasPagamento = await response.json();
+            const select = document.getElementById('forma-pagamento');
+            
+            // Limpar opções existentes (exceto a primeira)
+            select.innerHTML = '<option value="">Selecione a forma de pagamento</option>';
+            
+            // Adicionar formas de pagamento
+            formasPagamento.forEach(forma => {
+                const option = document.createElement('option');
+                option.value = forma.idformapagamento;
+                option.textContent = forma.nomeformapagamento;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Erro ao carregar formas de pagamento:', error);
+    }
+}
+
 // Finalizar compra
 async function finalizarCompra() {
     if (carrinho.length === 0) {
@@ -165,35 +190,76 @@ async function finalizarCompra() {
         }
         return;
     }
+
+    // Verificar se uma forma de pagamento foi selecionada
+    const formaPagamento = document.getElementById('forma-pagamento').value;
+    if (!formaPagamento) {
+        mostrarMensagem('Por favor, selecione uma forma de pagamento!', 'erro');
+        return;
+    }
     
     try {
         const loading = document.getElementById('loading-carrinho');
         loading.style.display = 'block';
         
-        // Simular processamento do pedido
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Obter informações do usuário logado
+        const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
+        if (!userInfo || !userInfo.cpf) {
+            throw new Error('Informações do usuário não encontradas');
+        }
         
-        // Aqui você pode implementar a integração com um sistema de pagamento
-        // Por enquanto, vamos apenas simular sucesso
+        // Calcular valor total
+        const valorTotal = carrinho.reduce((total, item) => total + (item.preco * item.quantidade), 0);
+        
+        // Preparar dados do pedido
+        const dadosPedido = {
+            clienteCpf: userInfo.cpf,
+            itensCarrinho: carrinho.map(item => ({
+                id: item.id,
+                nome: item.nome,
+                preco: item.preco,
+                quantidade: item.quantidade
+            })),
+            formaPagamento: parseInt(formaPagamento),
+            valorTotal: valorTotal
+        };
+        
+        // Enviar pedido para o backend
+        const response = await fetch('http://localhost:3001/pedidos/finalizar-carrinho', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify(dadosPedido)
+        });
         
         loading.style.display = 'none';
         
-        // Limpar carrinho após compra
-        carrinho = [];
-        salvarCarrinho();
-        exibirCarrinho();
-        
-        mostrarMensagem('Pedido realizado com sucesso! Obrigado pela sua compra!', 'sucesso');
-        
-        // Opcional: redirecionar para página de confirmação
-        setTimeout(() => {
-            alert('Pedido confirmado! Você receberá um email com os detalhes.');
-        }, 1000);
+        if (response.ok) {
+            const resultado = await response.json();
+            
+            // Limpar carrinho após compra bem-sucedida
+            carrinho = [];
+            salvarCarrinho();
+            exibirCarrinho();
+            
+            mostrarMensagem(`Pedido #${resultado.pedido.idpedido} realizado com sucesso! Obrigado pela sua compra!`, 'sucesso');
+            
+            // Mostrar detalhes do pedido
+            setTimeout(() => {
+                alert(`Pedido confirmado!\n\nPedido: #${resultado.pedido.idpedido}\nCliente: ${resultado.pedido.nomecliente}\nValor: R$ ${parseFloat(resultado.pedido.valortotalpagamento).toFixed(2)}\nForma de Pagamento: ${resultado.pedido.nomeformapagamento}\nData: ${new Date(resultado.pedido.datapagamento).toLocaleString('pt-BR')}\n\nItens comprados: ${resultado.itensComprados}`);
+            }, 1000);
+            
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Erro ao processar pedido');
+        }
         
     } catch (error) {
         console.error('Erro ao finalizar compra:', error);
         document.getElementById('loading-carrinho').style.display = 'none';
-        mostrarMensagem('Erro ao processar pedido. Tente novamente.', 'erro');
+        mostrarMensagem(error.message || 'Erro ao processar pedido. Tente novamente.', 'erro');
     }
 }
 

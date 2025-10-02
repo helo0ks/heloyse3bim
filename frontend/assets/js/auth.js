@@ -44,7 +44,8 @@ class AuthManager {
         return {
             token: this.getCookie('authToken'),
             type: this.getCookie('userType'),
-            name: this.getCookie('userName')
+            name: this.getCookie('userName'),
+            cpf: this.getCookie('userCpf')
         };
     }
 
@@ -54,6 +55,7 @@ class AuthManager {
         this.deleteCookie('authToken');
         this.deleteCookie('userType');
         this.deleteCookie('userName');
+        this.deleteCookie('userCpf');
         this.deleteCookie('isLoggedIn');
         
         // Remove localStorage

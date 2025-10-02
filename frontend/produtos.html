@@ -16,6 +16,7 @@
                 <option value="produtos" selected>Gerenciar Produtos</option>
                 <option value="pessoas">Gerenciar Pessoas</option>
                 <option value="cargo">Gerenciar Cargos</option>
+                <option value="pedidos">Gerenciar Pedidos</option>
             </select>
         </div>
         <div class="crud-navigation">
@@ -125,6 +126,93 @@
             <tbody>
                 <!-- Cargos serão inseridos aqui -->
             </tbody>
+        </table>
+    </div>
+
+    <!-- Seção de Pedidos -->
+    <div id="secaoPedidos" style="display:none;">
+        <h1 class="crud-title">Gerenciamento de Pedidos</h1>
+        
+        <form id="formPedido" autocomplete="off">
+            <div class="form-group">
+                <label for="idPedido">ID do Pedido:</label>
+                <input type="number" id="idPedido" name="idPedido" min="1">
+                <button type="button" id="btnBuscarPedido">Buscar por ID</button>
+                <span id="msgPedidoNaoExiste" style="display:none;color:#c62828;font-weight:bold;">Pedido não encontrado</span>
+            </div>
+
+            <div class="form-group">
+                <label for="dataDoPedido">Data do Pedido:</label>
+                <input type="date" id="dataDoPedido" name="dataDoPedido" required>
+            </div>
+
+            <div class="form-group">
+                <label for="clientePedido">Cliente:</label>
+                <select id="clientePedido" name="clientePedido" required>
+                    <option value="">Selecione um cliente</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="funcionarioPedido">Funcionário Responsável:</label>
+                <select id="funcionarioPedido" name="funcionarioPedido" required>
+                    <option value="">Selecione um funcionário</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Produtos do Pedido:</label>
+                <div id="produtosPedido">
+                    <div class="produto-item">
+                        <select class="produto-select" name="produto">
+                            <option value="">Selecione um produto</option>
+                        </select>
+                        <input type="number" class="quantidade-input" placeholder="Qtd" min="1" value="1">
+                        <input type="number" class="preco-input" placeholder="Preço Unit." step="0.01" min="0">
+                        <input type="number" class="subtotal-input" placeholder="Subtotal" step="0.01" readonly>
+                        <button type="button" class="btn-remover-produto">Remover</button>
+                    </div>
+                </div>
+                <button type="button" id="btnAdicionarProduto">+ Adicionar Produto</button>
+            </div>
+
+            <div class="form-group">
+                <label for="valorTotalPagamento">Valor Total do Pagamento:</label>
+                <input type="number" id="valorTotalPagamento" name="valorTotalPagamento" step="0.01" min="0" readonly>
+                <small style="color: #666; font-style: italic;">* Calculado automaticamente baseado nos produtos</small>
+            </div>
+
+            <div class="form-group">
+                <label>Formas de Pagamento:</label>
+                <div id="formasPagamento">
+                    <div class="forma-pagamento-item">
+                        <select class="forma-pagamento-select" name="formaPagamento">
+                            <option value="">Selecione uma forma de pagamento</option>
+                        </select>
+                        <input type="number" class="valor-pago-input" placeholder="Valor Pago" step="0.01" min="0">
+                        <button type="button" class="btn-remover-forma">Remover</button>
+                    </div>
+                </div>
+                <button type="button" id="btnAdicionarFormaPagamento">+ Adicionar Forma de Pagamento</button>
+            </div>
+
+            <button type="submit" id="btnCadastrarPedido">Cadastrar/Atualizar Pedido</button>
+        </form>
+
+        <h2>Pedidos Cadastrados</h2>
+        <table id="tabelaPedidos" border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Cliente</th>
+                    <th>Funcionário</th>
+                    <th>Valor Total</th>
+                    <th>Data Pagamento</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
         </table>
     </div>
 

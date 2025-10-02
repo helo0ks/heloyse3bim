@@ -22,12 +22,14 @@ function verificarPermissaoAdmin() {
 const apiProdutos = 'http://localhost:3001/produtos';
 const apiPessoas = 'http://localhost:3001/pessoas';
 const apiCargos = 'http://localhost:3001/cargo';
+const apiPedidos = 'http://localhost:3001/pedidos';
 
 // Alternância de seções
 const crudSelect = document.getElementById('crudSelect');
 const secaoProdutos = document.getElementById('secaoProdutos');
 const secaoPessoas = document.getElementById('secaoPessoas');
 const secaoCargo = document.getElementById('secaoCargo');
+const secaoPedidos = document.getElementById('secaoPedidos');
 
 crudSelect.onchange = () => {
     const selectedValue = crudSelect.value;
@@ -35,23 +37,36 @@ crudSelect.onchange = () => {
         secaoProdutos.style.display = '';
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = 'none';
     } else if (selectedValue === 'pessoas') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = '';
         secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = 'none';
     } else if (selectedValue === 'cargo') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = '';
+        secaoPedidos.style.display = 'none';
+    } else if (selectedValue === 'pedidos') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = '';
     }
 };
 
 
 // --- CRUD PRODUTOS ---
 window.onload = function() {
-    listarProdutos();
-    listarPessoas();
-    listarCargos();
+    // Aguardar o authManager carregar antes de fazer as requisições
+    setTimeout(() => {
+        listarProdutos();
+        listarPessoas();
+        listarCargos();
+        carregarDadosAuxiliaresPedidos();
+        listarPedidos();
+    }, 100);
     
     // Inicializar o estado do CRUD selector
     const selectedValue = crudSelect.value;
@@ -59,14 +74,22 @@ window.onload = function() {
         secaoProdutos.style.display = '';
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = 'none';
     } else if (selectedValue === 'pessoas') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = '';
         secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = 'none';
     } else if (selectedValue === 'cargo') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = '';
+        secaoPedidos.style.display = 'none';
+    } else if (selectedValue === 'pedidos') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = 'none';
+        secaoPedidos.style.display = '';
     }
 };
 
@@ -457,4 +480,525 @@ window.editarCargo = async function(id) {
         console.error('Erro:', error);
         alert('Erro ao carregar cargo para edição');
     }
+};
+
+// --- CRUD PEDIDOS ---
+
+// Variáveis globais para pedidos
+let clientesPedidos = [];
+let funcionariosPedidos = [];
+let produtosPedidos = [];
+let formasPagamentoPedidos = [];
+
+// Carregar dados auxiliares para pedidos
+async function carregarDadosAuxiliaresPedidos() {
+    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
+    const token = userInfo ? userInfo.token : localStorage.getItem('token');
+    try {
+        // Carregar clientes
+        const respClientes = await fetch(`${apiPedidos}/auxiliar/clientes`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        clientesPedidos = await respClientes.json();
+
+        // Carregar funcionários
+        const respFuncionarios = await fetch(`${apiPedidos}/auxiliar/funcionarios`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        funcionariosPedidos = await respFuncionarios.json();
+
+        // Carregar produtos
+        const respProdutos = await fetch(`${apiPedidos}/auxiliar/produtos`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        produtosPedidos = await respProdutos.json();
+
+        // Carregar formas de pagamento
+        const respFormas = await fetch(`${apiPedidos}/auxiliar/formas-pagamento`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        formasPagamentoPedidos = await respFormas.json();
+
+        // Preencher dropdowns
+        preencherDropdownClientes();
+        preencherDropdownFuncionarios();
+        preencherDropdownProdutos();
+        preencherDropdownFormasPagamento();
+
+    } catch (error) {
+        console.error('Erro ao carregar dados auxiliares:', error);
+    }
+}
+
+function preencherDropdownClientes() {
+    const select = document.getElementById('clientePedido');
+    select.innerHTML = '<option value="">Selecione um cliente</option>';
+    clientesPedidos.forEach(cliente => {
+        const option = document.createElement('option');
+        option.value = cliente.cpf;
+        option.textContent = `${cliente.nome} (${cliente.email})`;
+        select.appendChild(option);
+    });
+}
+
+function preencherDropdownFuncionarios() {
+    const select = document.getElementById('funcionarioPedido');
+    select.innerHTML = '<option value="">Selecione um funcionário</option>';
+    funcionariosPedidos.forEach(funcionario => {
+        const option = document.createElement('option');
+        option.value = funcionario.cpf;
+        option.textContent = `${funcionario.nome} (${funcionario.email})`;
+        select.appendChild(option);
+    });
+}
+
+function preencherDropdownProdutos() {
+    const selects = document.querySelectorAll('.produto-select');
+    selects.forEach(select => {
+        select.innerHTML = '<option value="">Selecione um produto</option>';
+        produtosPedidos.forEach(produto => {
+            const option = document.createElement('option');
+            option.value = produto.id;
+            option.textContent = `${produto.nome} - R$ ${parseFloat(produto.preco).toFixed(2)} (Estoque: ${produto.estoque})`;
+            option.dataset.preco = produto.preco;
+            select.appendChild(option);
+        });
+    });
+}
+
+function preencherDropdownFormasPagamento() {
+    const selects = document.querySelectorAll('.forma-pagamento-select');
+    selects.forEach(select => {
+        select.innerHTML = '<option value="">Selecione uma forma de pagamento</option>';
+        formasPagamentoPedidos.forEach(forma => {
+            const option = document.createElement('option');
+            option.value = forma.idformapagamento;
+            option.textContent = forma.nomeformapagamento;
+            select.appendChild(option);
+        });
+    });
+}
+
+// Adicionar produto ao pedido
+document.getElementById('btnAdicionarProduto').onclick = function() {
+    const container = document.getElementById('produtosPedido');
+    const div = document.createElement('div');
+    div.className = 'produto-item';
+    div.innerHTML = `
+        <select class="produto-select" name="produto">
+            <option value="">Selecione um produto</option>
+        </select>
+        <input type="number" class="quantidade-input" placeholder="Qtd" min="1" value="1">
+        <input type="number" class="preco-input" placeholder="Preço Unit." step="0.01" min="0">
+        <input type="number" class="subtotal-input" placeholder="Subtotal" step="0.01" readonly>
+        <button type="button" class="btn-remover-produto">Remover</button>
+    `;
+    container.appendChild(div);
+    
+    // Preencher dropdown do novo produto
+    const novoSelect = div.querySelector('.produto-select');
+    produtosPedidos.forEach(produto => {
+        const option = document.createElement('option');
+        option.value = produto.id;
+        option.textContent = `${produto.nome} - R$ ${parseFloat(produto.preco).toFixed(2)} (Estoque: ${produto.estoque})`;
+        option.dataset.preco = produto.preco;
+        novoSelect.appendChild(option);
+    });
+
+    // Evento para preencher preço automaticamente
+    novoSelect.onchange = function() {
+        const precoInput = div.querySelector('.preco-input');
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption.dataset.preco) {
+            precoInput.value = parseFloat(selectedOption.dataset.preco).toFixed(2);
+        }
+        // Calcular valor total após seleção
+        calcularValorTotalPedido();
+    };
+
+    // Eventos para calcular total quando quantidade ou preço mudarem
+    div.querySelector('.quantidade-input').oninput = calcularValorTotalPedido;
+    div.querySelector('.preco-input').oninput = calcularValorTotalPedido;
+
+    // Evento para remover produto
+    div.querySelector('.btn-remover-produto').onclick = function() {
+        div.remove();
+        // Recalcular total após remoção
+        calcularValorTotalPedido();
+    };
+};
+
+// Adicionar forma de pagamento
+document.getElementById('btnAdicionarFormaPagamento').onclick = function() {
+    const container = document.getElementById('formasPagamento');
+    const div = document.createElement('div');
+    div.className = 'forma-pagamento-item';
+    div.innerHTML = `
+        <select class="forma-pagamento-select" name="formaPagamento">
+            <option value="">Selecione uma forma de pagamento</option>
+        </select>
+        <input type="number" class="valor-pago-input" placeholder="Valor Pago" step="0.01" min="0">
+        <button type="button" class="btn-remover-forma">Remover</button>
+    `;
+    container.appendChild(div);
+    
+    // Preencher dropdown da nova forma de pagamento
+    const novoSelect = div.querySelector('.forma-pagamento-select');
+    formasPagamentoPedidos.forEach(forma => {
+        const option = document.createElement('option');
+        option.value = forma.idformapagamento;
+        option.textContent = forma.nomeformapagamento;
+        novoSelect.appendChild(option);
+    });
+
+    // Evento para remover forma de pagamento
+    div.querySelector('.btn-remover-forma').onclick = function() {
+        div.remove();
+        // Redistribuir valores após remoção
+        distribuirValorFormasPagamento();
+    };
+    
+    // Distribuir valor total se for a primeira forma de pagamento
+    distribuirValorFormasPagamento();
+};
+
+// Função para calcular valor total automaticamente
+function calcularValorTotalPedido() {
+    const produtosItems = document.querySelectorAll('#produtosPedido .produto-item');
+    let valorTotal = 0;
+    
+    produtosItems.forEach(item => {
+        const quantidadeInput = item.querySelector('.quantidade-input');
+        const precoInput = item.querySelector('.preco-input');
+        const subtotalInput = item.querySelector('.subtotal-input');
+        
+        const quantidade = parseFloat(quantidadeInput.value) || 0;
+        const precoUnitario = parseFloat(precoInput.value) || 0;
+        const subtotal = quantidade * precoUnitario;
+        
+        // Atualizar subtotal individual
+        if (subtotalInput) {
+            subtotalInput.value = subtotal.toFixed(2);
+        }
+        
+        valorTotal += subtotal;
+    });
+    
+    // Atualizar campo de valor total
+    const valorTotalInput = document.getElementById('valorTotalPagamento');
+    if (valorTotalInput) {
+        valorTotalInput.value = valorTotal.toFixed(2);
+    }
+    
+    // Distribuir valor total automaticamente se houver apenas uma forma de pagamento
+    distribuirValorFormasPagamento();
+    
+    return valorTotal;
+}
+
+// Função para distribuir valor total nas formas de pagamento
+function distribuirValorFormasPagamento() {
+    const valorTotal = parseFloat(document.getElementById('valorTotalPagamento').value) || 0;
+    const formasItems = document.querySelectorAll('#formasPagamento .forma-pagamento-item');
+    
+    // Se houver apenas uma forma de pagamento, coloca o valor total nela
+    if (formasItems.length === 1 && valorTotal > 0) {
+        const valorPagoInput = formasItems[0].querySelector('.valor-pago-input');
+        if (valorPagoInput && !valorPagoInput.value) {
+            valorPagoInput.value = valorTotal.toFixed(2);
+        }
+    }
+}
+
+// Eventos de produto - preencher preço automaticamente e calcular total
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('produto-select')) {
+        const precoInput = e.target.parentElement.querySelector('.preco-input');
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption.dataset.preco) {
+            precoInput.value = parseFloat(selectedOption.dataset.preco).toFixed(2);
+        }
+        // Calcular valor total após seleção de produto
+        calcularValorTotalPedido();
+    }
+    
+    // Calcular valor total quando quantidade ou preço mudarem
+    if (e.target.classList.contains('quantidade-input') || e.target.classList.contains('preco-input')) {
+        calcularValorTotalPedido();
+    }
+});
+
+// Remover produtos e formas de pagamento iniciais
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('btn-remover-produto')) {
+        e.target.parentElement.remove();
+        // Recalcular total após remoção
+        calcularValorTotalPedido();
+    }
+    if (e.target.classList.contains('btn-remover-forma')) {
+        e.target.parentElement.remove();
+    }
+});
+
+// Buscar pedido por ID
+document.getElementById('btnBuscarPedido').onclick = async function() {
+    const id = document.getElementById('idPedido').value;
+    if (!id) return alert('Digite um ID para buscar!');
+    
+    const token = localStorage.getItem('token');
+    try {
+        const resp = await fetch(`${apiPedidos}/${id}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (resp.ok) {
+            const pedido = await resp.json();
+            
+            // Preencher campos básicos
+            document.getElementById('dataDoPedido').value = pedido.datadopedido;
+            document.getElementById('clientePedido').value = pedido.clientepessoacpfpessoa;
+            document.getElementById('funcionarioPedido').value = pedido.funcionariopessoacpfpessoa;
+            document.getElementById('valorTotalPagamento').value = pedido.valortotal || '';
+            
+            // Limpar produtos e formas de pagamento
+            document.getElementById('produtosPedido').innerHTML = '';
+            document.getElementById('formasPagamento').innerHTML = '';
+            
+            // Preencher produtos
+            if (pedido.produtos && pedido.produtos.length > 0) {
+                pedido.produtos.forEach(produto => {
+                    document.getElementById('btnAdicionarProduto').click();
+                    const ultimoItem = document.querySelector('#produtosPedido .produto-item:last-child');
+                    ultimoItem.querySelector('.produto-select').value = produto.produtoidproduto;
+                    ultimoItem.querySelector('.quantidade-input').value = produto.quantidade;
+                    ultimoItem.querySelector('.preco-input').value = parseFloat(produto.precounitario).toFixed(2);
+                });
+            }
+            
+            // Preencher formas de pagamento
+            if (pedido.formaspagamento && pedido.formaspagamento.length > 0) {
+                pedido.formaspagamento.forEach(forma => {
+                    document.getElementById('btnAdicionarFormaPagamento').click();
+                    const ultimoItem = document.querySelector('#formasPagamento .forma-pagamento-item:last-child');
+                    ultimoItem.querySelector('.forma-pagamento-select').value = forma.idformapagamento;
+                    ultimoItem.querySelector('.valor-pago-input').value = parseFloat(forma.valorpago).toFixed(2);
+                });
+            }
+            
+            document.getElementById('formPedido').dataset.editando = 'true';
+            document.getElementById('msgPedidoNaoExiste').style.display = 'none';
+        } else {
+            // Não existe, limpa campos para cadastro
+            document.getElementById('formPedido').reset();
+            document.getElementById('idPedido').value = id;
+            document.getElementById('formPedido').dataset.editando = '';
+            document.getElementById('msgPedidoNaoExiste').style.display = 'inline';
+            
+            // Limpar produtos e formas de pagamento
+            document.getElementById('produtosPedido').innerHTML = `
+                <div class="produto-item">
+                    <select class="produto-select" name="produto">
+                        <option value="">Selecione um produto</option>
+                    </select>
+                    <input type="number" class="quantidade-input" placeholder="Qtd" min="1" value="1">
+                    <input type="number" class="preco-input" placeholder="Preço Unit." step="0.01" min="0">
+                    <input type="number" class="subtotal-input" placeholder="Subtotal" step="0.01" readonly>
+                    <button type="button" class="btn-remover-produto">Remover</button>
+                </div>
+            `;
+            document.getElementById('formasPagamento').innerHTML = `
+                <div class="forma-pagamento-item">
+                    <select class="forma-pagamento-select" name="formaPagamento">
+                        <option value="">Selecione uma forma de pagamento</option>
+                    </select>
+                    <input type="number" class="valor-pago-input" placeholder="Valor Pago" step="0.01" min="0">
+                    <button type="button" class="btn-remover-forma">Remover</button>
+                </div>
+            `;
+            preencherDropdownProdutos();
+            preencherDropdownFormasPagamento();
+        }
+    } catch (e) {
+        alert('Erro ao buscar pedido!');
+    }
+};
+
+// Form de pedido
+document.getElementById('formPedido').onsubmit = async function(e) {
+    e.preventDefault();
+    
+    // Coletar produtos
+    const produtosItems = document.querySelectorAll('#produtosPedido .produto-item');
+    const produtos = [];
+    produtosItems.forEach(item => {
+        const produtoId = item.querySelector('.produto-select').value;
+        const quantidade = item.querySelector('.quantidade-input').value;
+        const precoUnitario = item.querySelector('.preco-input').value;
+        
+        if (produtoId && quantidade && precoUnitario) {
+            produtos.push({
+                ProdutoIdProduto: parseInt(produtoId),
+                quantidade: parseInt(quantidade),
+                precoUnitario: parseFloat(precoUnitario)
+            });
+        }
+    });
+    
+    // Coletar formas de pagamento
+    const formasItems = document.querySelectorAll('#formasPagamento .forma-pagamento-item');
+    const formasPagamento = [];
+    formasItems.forEach(item => {
+        const formaId = item.querySelector('.forma-pagamento-select').value;
+        const valorPago = item.querySelector('.valor-pago-input').value;
+        
+        if (formaId && valorPago) {
+            formasPagamento.push({
+                FormaPagamentoIdFormaPagamento: parseInt(formaId),
+                valorPago: parseFloat(valorPago)
+            });
+        }
+    });
+    
+    const pedido = {
+        dataDoPedido: document.getElementById('dataDoPedido').value,
+        ClientePessoaCpfPessoa: document.getElementById('clientePedido').value,
+        FuncionarioPessoaCpfPessoa: document.getElementById('funcionarioPedido').value,
+        produtos: produtos,
+        valorTotalPagamento: parseFloat(document.getElementById('valorTotalPagamento').value) || 0,
+        formasPagamento: formasPagamento
+    };
+    
+    if (this.dataset.editando === 'true') {
+        pedido.idPedido = parseInt(document.getElementById('idPedido').value);
+        await atualizarPedido(pedido);
+    } else {
+        await cadastrarPedido(pedido);
+    }
+    
+    this.reset();
+    this.dataset.editando = '';
+    document.getElementById('msgPedidoNaoExiste').style.display = 'none';
+    listarPedidos();
+};
+
+async function listarPedidos() {
+    try {
+        console.log('=== CARREGANDO PEDIDOS ===');
+        const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
+        const token = userInfo ? userInfo.token : localStorage.getItem('token');
+        console.log('Token:', token ? 'Presente' : 'Ausente');
+        
+        const resp = await fetch(apiPedidos, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        console.log('Status da resposta:', resp.status);
+        
+        if (!resp.ok) {
+            throw new Error(`Erro HTTP: ${resp.status}`);
+        }
+        
+        const pedidos = await resp.json();
+        console.log('Pedidos recebidos:', pedidos.length);
+        console.log('Primeiro pedido:', pedidos[0]);
+        
+        const tbody = document.querySelector('#tabelaPedidos tbody');
+        if (!tbody) {
+            console.error('Elemento tbody não encontrado!');
+            return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (pedidos.length === 0) {
+            console.log('Nenhum pedido encontrado');
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td colspan="7">Nenhum pedido encontrado</td>';
+            tbody.appendChild(tr);
+            return;
+        }
+        
+        pedidos.forEach(pedido => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${pedido.idpedido}</td>
+                <td>${new Date(pedido.datadopedido).toLocaleDateString('pt-BR')}</td>
+                <td>${pedido.nomecliente || 'N/A'}</td>
+                <td>${pedido.nomefuncionario || 'N/A'}</td>
+                <td>R$ ${(parseFloat(pedido.valortotal) || 0).toFixed(2)}</td>
+                <td>${pedido.datapagamento ? new Date(pedido.datapagamento).toLocaleDateString('pt-BR') : 'Não pago'}</td>
+                <td>
+                    <button onclick="editarPedido(${pedido.idpedido})">Editar</button>
+                    <button onclick="deletarPedido(${pedido.idpedido})">Excluir</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+        
+    } catch (error) {
+        console.error('Erro ao carregar pedidos:', error);
+        const tbody = document.querySelector('#tabelaPedidos tbody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7">Erro ao carregar pedidos</td></tr>';
+        }
+    }
+}
+
+async function cadastrarPedido(pedido) {
+    if (!verificarPermissaoAdmin()) return;
+    
+    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
+    const token = userInfo ? userInfo.token : localStorage.getItem('token');
+    await fetch(apiPedidos, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(pedido)
+    });
+}
+
+async function atualizarPedido(pedido) {
+    if (!verificarPermissaoAdmin()) return;
+    
+    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
+    const token = userInfo ? userInfo.token : localStorage.getItem('token');
+    await fetch(`${apiPedidos}/${pedido.idPedido}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(pedido)
+    });
+}
+
+window.deletarPedido = async function(id) {
+    if (!verificarPermissaoAdmin()) return;
+    
+    if (confirm('Tem certeza que deseja excluir este pedido?')) {
+        try {
+            const token = localStorage.getItem('token');
+            const resp = await fetch(`${apiPedidos}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            
+            if (resp.ok) {
+                alert('Pedido excluído com sucesso!');
+                listarPedidos();
+            } else {
+                alert('Erro ao excluir pedido');
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao excluir pedido');
+        }
+    }
+};
+
+window.editarPedido = async function(id) {
+    document.getElementById('idPedido').value = id;
+    document.getElementById('btnBuscarPedido').click();
 };
