@@ -7,14 +7,66 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <main class="container">
-    <h1>Seu Carrinho</h1>
-    <div id="carrinho-itens">
-      <!-- Itens do carrinho serão carregados aqui via JS -->
+  <header>
+    <h1>Loja de Pelúcias Snoopy</h1>
+    <nav>
+      <a href="index.html">Início</a>
+      <a href="login.html">Entrar</a>
+      <a href="cadastro/cadastro.html">Cadastrar</a>
+    </nav>
+  </header>
+  
+  <main class="carrinho-container">
+    <div class="carrinho-header">
+      <h2>Seu Carrinho de Compras</h2>
+      <a href="index.html" class="continuar-comprando">← Continuar Comprando</a>
     </div>
-    <button id="finalizar-compra" class="login">Finalizar Compra</button>
-    <p id="mensagem-carrinho" style="color: #e573b5; text-align: center; margin-top: 10px;"></p>
+    
+    <div id="carrinho-vazio" class="carrinho-vazio" style="display: none;">
+      <h3>Seu carrinho está vazio</h3>
+      <p>Adicione alguns produtos incríveis da nossa loja!</p>
+      <a href="index.html" class="btn-voltar-loja">Ver Produtos</a>
+    </div>
+    
+    <div id="carrinho-conteudo" class="carrinho-conteudo">
+      <div id="carrinho-itens" class="carrinho-itens">
+        <!-- Itens do carrinho serão carregados aqui via JS -->
+      </div>
+      
+      <div class="carrinho-resumo">
+        <div class="resumo-valores">
+          <div class="linha-valor">
+            <span>Subtotal:</span>
+            <span id="subtotal">R$ 0,00</span>
+          </div>
+          <div class="linha-valor">
+            <span>Frete:</span>
+            <span id="frete">Grátis</span>
+          </div>
+          <div class="linha-valor total">
+            <span>Total:</span>
+            <span id="total">R$ 0,00</span>
+          </div>
+        </div>
+        
+        <div class="carrinho-acoes">
+          <button id="limpar-carrinho" class="btn-secundario">Limpar Carrinho</button>
+          <button id="finalizar-compra" class="btn-principal">Finalizar Compra</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="loading-carrinho" class="loading" style="display: none;">
+      Carregando carrinho...
+    </div>
+    
+    <p id="mensagem-carrinho" class="mensagem" style="display: none;"></p>
   </main>
+  
+  <footer>
+    <p>&copy; 2025 Loja Snoopy - Feito com ❤️ para os fãs do Snoopy</p>
+  </footer>
+  <script src="assets/js/auth.js"></script>
   <script src="assets/js/carrinho.js"></script>
 </body>
 </html>

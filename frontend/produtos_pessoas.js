@@ -1,25 +1,49 @@
-// produtos_pessoas.js - CRUD integrado de produtos e pessoas
-// --- PRODUTOS ---
+// produtos_pessoas.js - CRUD integrado de produtos, pessoas e cargos
+
+// Verificação de segurança - apenas admins
+function verificarPermissaoAdmin() {
+    if (!window.authManager || !window.authManager.isLoggedIn()) {
+        alert('Sessão expirada. Redirecionando para login...');
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    const userInfo = window.authManager.getUserInfo();
+    if (userInfo.type !== 'admin') {
+        alert('Acesso negado! Apenas administradores podem gerenciar os dados.');
+        window.location.href = 'index.html';
+        return false;
+    }
+    
+    return true;
+}
+
+// --- APIs ---
 const apiProdutos = 'http://localhost:3001/produtos';
 const apiPessoas = 'http://localhost:3001/pessoas';
+const apiCargos = 'http://localhost:3001/cargo';
 
 // Alternância de seções
-const btnProdutos = document.getElementById('btnProdutos');
-const btnPessoas = document.getElementById('btnPessoas');
+const crudSelect = document.getElementById('crudSelect');
 const secaoProdutos = document.getElementById('secaoProdutos');
 const secaoPessoas = document.getElementById('secaoPessoas');
+const secaoCargo = document.getElementById('secaoCargo');
 
-btnProdutos.onclick = () => {
-    secaoProdutos.style.display = '';
-    secaoPessoas.style.display = 'none';
-    btnProdutos.style.background = '#e573b5';
-    btnPessoas.style.background = '#f8bbd0';
-};
-btnPessoas.onclick = () => {
-    secaoProdutos.style.display = 'none';
-    secaoPessoas.style.display = '';
-    btnProdutos.style.background = '#f8bbd0';
-    btnPessoas.style.background = '#e573b5';
+crudSelect.onchange = () => {
+    const selectedValue = crudSelect.value;
+    if (selectedValue === 'produtos') {
+        secaoProdutos.style.display = '';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = 'none';
+    } else if (selectedValue === 'pessoas') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = '';
+        secaoCargo.style.display = 'none';
+    } else if (selectedValue === 'cargo') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = '';
+    }
 };
 
 
@@ -27,21 +51,26 @@ btnPessoas.onclick = () => {
 window.onload = function() {
     listarProdutos();
     listarPessoas();
-    bloquearCamposProduto(true);
+    listarCargos();
+    
+    // Inicializar o estado do CRUD selector
+    const selectedValue = crudSelect.value;
+    if (selectedValue === 'produtos') {
+        secaoProdutos.style.display = '';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = 'none';
+    } else if (selectedValue === 'pessoas') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = '';
+        secaoCargo.style.display = 'none';
+    } else if (selectedValue === 'cargo') {
+        secaoProdutos.style.display = 'none';
+        secaoPessoas.style.display = 'none';
+        secaoCargo.style.display = '';
+    }
 };
 
-function bloquearCamposProduto(bloquear) {
-    const campos = ['nome', 'descricao', 'preco', 'imagem', 'estoque'];
-    campos.forEach(id => {
-        document.getElementById(id).disabled = bloquear;
-    });
-    document.querySelector('#formProduto button[type="submit"]').disabled = bloquear;
-}
-
-// Habilita campo de ID para digitação
-document.getElementById('id').disabled = false;
-
-// Buscar por ID
+// Buscar por ID (opcional para verificar se produto existe)
 document.getElementById('btnBuscarId').onclick = async function() {
     const id = document.getElementById('id').value;
     if (!id) return alert('Digite um ID para buscar!');
@@ -57,23 +86,19 @@ document.getElementById('btnBuscarId').onclick = async function() {
             document.getElementById('preco').value = produto.preco;
             document.getElementById('imagem').value = produto.imagem;
             document.getElementById('estoque').value = produto.estoque;
-            editandoProdutoId = id;
-            document.getElementById('formProduto').querySelector('button[type="submit"]').textContent = 'Salvar Alteração';
+            document.getElementById('formProduto').dataset.editando = 'true';
+            document.getElementById('msgIdNaoExiste').style.display = 'none';
         } else {
             // Não existe, limpa campos para cadastro
             document.getElementById('formProduto').reset();
             document.getElementById('id').value = id;
-            editandoProdutoId = null;
-            document.getElementById('formProduto').querySelector('button[type="submit"]').textContent = 'Cadastrar Produto';
+            document.getElementById('formProduto').dataset.editando = '';
+            document.getElementById('msgIdNaoExiste').style.display = 'inline';
         }
-        bloquearCamposProduto(false);
     } catch (e) {
         alert('Erro ao buscar produto!');
     }
 };
-
-
-let editandoProdutoId = null;
 
 document.getElementById('formProduto').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -85,23 +110,16 @@ document.getElementById('formProduto').addEventListener('submit', async function
         imagem: document.getElementById('imagem').value,
         estoque: parseInt(document.getElementById('estoque').value)
     };
-    const token = localStorage.getItem('token');
-    if (editandoProdutoId) {
-        await fetch(`${apiProdutos}/${editandoProdutoId}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
-            },
-            body: JSON.stringify(produto)
-        });
-        editandoProdutoId = null;
-        this.querySelector('button[type="submit"]').textContent = 'Cadastrar Produto';
+    
+    if (this.dataset.editando === 'true') {
+        await atualizarProduto(produto);
     } else {
         await cadastrarProduto(produto);
     }
+    
     this.reset();
-    bloquearCamposProduto(true);
+    this.dataset.editando = '';
+    document.getElementById('msgIdNaoExiste').style.display = 'none';
     listarProdutos();
 });
 
@@ -120,7 +138,7 @@ async function listarProdutos() {
             <td>${produto.nome}</td>
             <td>${produto.descricao || ''}</td>
             <td>R$ ${(Number(produto.preco) || 0).toFixed(2)}</td>
-            <td>${produto.imagem ? `<img src="${produto.imagem}" alt="img" width="50">` : ''}</td>
+            <td>${produto.imagem && produto.imagem.trim() && produto.imagem !== '' ? `<img src="${produto.imagem.startsWith('img/') ? 'http://localhost:3001/' + produto.imagem : produto.imagem}" alt="img" width="50" onerror="this.style.display='none'">` : '<span class="sem-imagem">Sem imagem</span>'}</td>
             <td>${produto.estoque}</td>
             <td>
                 <button onclick="editarProduto(${produto.id})">Editar</button>
@@ -132,6 +150,8 @@ async function listarProdutos() {
 }
 
 async function cadastrarProduto(produto) {
+    if (!verificarPermissaoAdmin()) return;
+    
     const token = localStorage.getItem('token');
     await fetch(apiProdutos, {
         method: 'POST',
@@ -143,7 +163,23 @@ async function cadastrarProduto(produto) {
     });
 }
 
+async function atualizarProduto(produto) {
+    if (!verificarPermissaoAdmin()) return;
+    
+    const token = localStorage.getItem('token');
+    await fetch(`${apiProdutos}/${produto.id}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(produto)
+    });
+}
+
 async function deletarProduto(id) {
+    if (!verificarPermissaoAdmin()) return;
+    
     const token = localStorage.getItem('token');
     await fetch(`${apiProdutos}/${id}`, {
         method: 'DELETE',
@@ -158,29 +194,15 @@ window.editarProduto = async function(id) {
         headers: { 'Authorization': 'Bearer ' + token }
     });
     const produto = await resp.json();
+    document.getElementById('id').value = produto.id;
     document.getElementById('nome').value = produto.nome;
     document.getElementById('descricao').value = produto.descricao;
     document.getElementById('preco').value = produto.preco;
     document.getElementById('imagem').value = produto.imagem;
     document.getElementById('estoque').value = produto.estoque;
-    editandoProdutoId = id;
-    document.getElementById('formProduto').querySelector('button[type="submit"]').textContent = 'Salvar Alteração';
+    document.getElementById('formProduto').dataset.editando = 'true';
+    document.getElementById('msgIdNaoExiste').style.display = 'none';
 };
-
-async function defaultSubmitProduto(e) {
-    e.preventDefault();
-    const produto = {
-        nome: document.getElementById('nome').value,
-        descricao: document.getElementById('descricao').value,
-        preco: parseFloat(document.getElementById('preco').value),
-        imagem: document.getElementById('imagem').value,
-        estoque: parseInt(document.getElementById('estoque').value)
-    };
-    await cadastrarProduto(produto);
-    this.reset();
-    listarProdutos();
-}
-
 
 // --- CRUD PESSOAS ---
 document.getElementById('formPessoa').addEventListener('submit', async function(e) {
@@ -201,6 +223,40 @@ document.getElementById('formPessoa').addEventListener('submit', async function(
     this.dataset.editando = '';
     listarPessoas();
 });
+
+// Buscar pessoa por CPF
+document.getElementById('btnBuscarCpf').onclick = async function() {
+    const cpf = document.getElementById('cpf').value;
+    if (!cpf) return alert('Digite um CPF para buscar!');
+    
+    try {
+        const token = localStorage.getItem('token');
+        const resp = await fetch(`${apiPessoas}/${cpf}`, {
+            headers: { 'Authorization': 'Bearer ' + token }
+        });
+        
+        if (resp.ok) {
+            const pessoa = await resp.json();
+            document.getElementById('nomePessoa').value = pessoa.nome;
+            document.getElementById('email').value = pessoa.email;
+            document.getElementById('tipo').value = pessoa.tipo;
+            document.getElementById('senha').value = '';
+            document.getElementById('formPessoa').dataset.editando = 'true';
+            document.getElementById('msgCpfNaoExiste').style.display = 'none';
+        } else {
+            document.getElementById('msgCpfNaoExiste').style.display = 'inline';
+            // Limpar campos se não encontrou
+            document.getElementById('nomePessoa').value = '';
+            document.getElementById('email').value = '';
+            document.getElementById('tipo').value = 'cliente';
+            document.getElementById('senha').value = '';
+            document.getElementById('formPessoa').dataset.editando = '';
+        }
+    } catch (error) {
+        console.error('Erro ao buscar pessoa:', error);
+        alert('Erro ao buscar pessoa');
+    }
+};
 
 async function listarPessoas() {
     const token = localStorage.getItem('token');
@@ -227,6 +283,8 @@ async function listarPessoas() {
 }
 
 async function cadastrarPessoa(pessoa) {
+    if (!verificarPermissaoAdmin()) return;
+    
     const token = localStorage.getItem('token');
     await fetch(apiPessoas, {
         method: 'POST',
@@ -239,6 +297,8 @@ async function cadastrarPessoa(pessoa) {
 }
 
 async function atualizarPessoa(pessoa) {
+    if (!verificarPermissaoAdmin()) return;
+    
     const token = localStorage.getItem('token');
     await fetch(`${apiPessoas}/${pessoa.cpf}`, {
         method: 'PUT',
@@ -251,6 +311,8 @@ async function atualizarPessoa(pessoa) {
 }
 
 async function deletarPessoa(cpf) {
+    if (!verificarPermissaoAdmin()) return;
+    
     const token = localStorage.getItem('token');
     await fetch(`${apiPessoas}/${cpf}`, {
         method: 'DELETE',
@@ -271,4 +333,128 @@ window.editarPessoa = async function(cpf) {
     document.getElementById('tipo').value = pessoa.tipo;
     document.getElementById('senha').value = '';
     document.getElementById('formPessoa').dataset.editando = 'true';
+};
+
+// --- CRUD CARGOS ---
+
+// Listar cargos
+async function listarCargos() {
+    try {
+        const resp = await fetch(apiCargos);
+        const cargos = await resp.json();
+        const tbody = document.querySelector('#tabelaCargos tbody');
+        tbody.innerHTML = '';
+        cargos.forEach(cargo => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${cargo.idcargo}</td>
+                    <td>${cargo.nomecargo}</td>
+                    <td>
+                        <button onclick="editarCargo(${cargo.idcargo})">Editar</button>
+                        <button onclick="deletarCargo(${cargo.idcargo})" class="btn-danger">Deletar</button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (error) {
+        console.error('Erro ao listar cargos:', error);
+        alert('Erro ao carregar cargos');
+    }
+}
+
+// Form submit para cargo
+document.getElementById('formCargo').onsubmit = async function(e) {
+    e.preventDefault();
+    
+    if (!verificarPermissaoAdmin()) return;
+    
+    const idCargo = document.getElementById('idCargo').value;
+    const nomeCargo = document.getElementById('nomeCargo').value;
+    
+    const data = { idCargo: parseInt(idCargo), nomeCargo };
+    
+    try {
+        const isEditing = this.dataset.editando === 'true';
+        const method = isEditing ? 'PUT' : 'POST';
+        const url = isEditing ? `${apiCargos}/${idCargo}` : apiCargos;
+        
+        const resp = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        if (resp.ok) {
+            alert(isEditing ? 'Cargo atualizado!' : 'Cargo cadastrado!');
+            this.reset();
+            this.dataset.editando = 'false';
+            listarCargos();
+        } else {
+            const error = await resp.json();
+            alert('Erro: ' + error.error);
+        }
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao salvar cargo');
+    }
+};
+
+// Buscar cargo por ID
+document.getElementById('btnBuscarIdCargo').onclick = async function() {
+    const id = document.getElementById('idCargo').value;
+    if (!id) return alert('Digite um ID para buscar!');
+    
+    try {
+        const resp = await fetch(`${apiCargos}/${id}`);
+        
+        if (resp.ok) {
+            const cargo = await resp.json();
+            document.getElementById('nomeCargo').value = cargo.nomecargo;
+            document.getElementById('formCargo').dataset.editando = 'true';
+            document.getElementById('msgIdCargoNaoExiste').style.display = 'none';
+        } else {
+            document.getElementById('msgIdCargoNaoExiste').style.display = 'inline';
+            // Limpar campo se não encontrou
+            document.getElementById('nomeCargo').value = '';
+            document.getElementById('formCargo').dataset.editando = '';
+        }
+    } catch (error) {
+        console.error('Erro ao buscar cargo:', error);
+        alert('Erro ao buscar cargo');
+    }
+};
+
+// Deletar cargo
+async function deletarCargo(id) {
+    if (!verificarPermissaoAdmin()) return;
+    
+    if (confirm('Deseja deletar este cargo?')) {
+        try {
+            const resp = await fetch(`${apiCargos}/${id}`, { method: 'DELETE' });
+            if (resp.ok) {
+                alert('Cargo deletado!');
+                listarCargos();
+            } else {
+                const error = await resp.json();
+                alert('Erro: ' + error.error);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+            alert('Erro ao deletar cargo');
+        }
+    }
+}
+
+// Editar cargo
+window.editarCargo = async function(id) {
+    try {
+        const resp = await fetch(`${apiCargos}/${id}`);
+        const cargo = await resp.json();
+        document.getElementById('idCargo').value = cargo.idcargo;
+        document.getElementById('nomeCargo').value = cargo.nomecargo;
+        document.getElementById('formCargo').dataset.editando = 'true';
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao carregar cargo para edição');
+    }
 };

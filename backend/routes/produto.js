@@ -4,6 +4,8 @@ const router = express.Router();
 const produtoController = require('../controllers/produtoController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 
+// Rota pública para listar produtos (para a loja)
+router.get('/publicos', produtoController.listarProdutosPublicos);
 
 // Todas as rotas de produto protegidas para admin
 

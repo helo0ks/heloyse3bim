@@ -11,16 +11,47 @@
     <h1>Loja de Pelúcias Snoopy</h1>
     <nav>
       <a href="login.html">Entrar</a>
-      <a href="cadastro.html">Cadastrar</a>
+      <a href="cadastro/cadastro.html">Cadastrar</a>
       <a href="carrinho.html">Carrinho</a>
     </nav>
   </header>
-  <main id="produtos-container">
-    <!-- Produtos serão carregados aqui via JS -->
+  <main>
+    <div class="produtos-section">
+      <h3>Nossos Produtos</h3>
+      <div class="filtros">
+        <input type="text" id="busca-produto" placeholder="Buscar produtos...">
+        <select id="filtro-categoria">
+          <option value="">Todas as categorias</option>
+        </select>
+      </div>
+      <div id="produtos-container" class="produtos-grid">
+        <!-- Produtos serão carregados aqui via JS -->
+      </div>
+      <div id="loading" class="loading">Carregando produtos...</div>
+      <div id="erro-produtos" class="erro" style="display: none;">
+        Erro ao carregar produtos. Tente novamente mais tarde.
+      </div>
+    </div>
   </main>
+  
   <footer>
-    <p>&copy; 2025 Loja Snoopy</p>
+    <p>&copy; 2025 Loja Snoopy - Feito com ❤️ para os fãs do Snoopy</p>
   </footer>
+  
+  <!-- Modal do Carrinho -->
+  <div id="modal-carrinho" class="modal" style="display: none;">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Produto adicionado ao carrinho!</h3>
+      <p id="produto-adicionado"></p>
+      <div class="modal-buttons">
+        <button onclick="continuarComprando()">Continuar Comprando</button>
+        <button onclick="irParaCarrinho()">Ver Carrinho</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="assets/js/auth.js"></script>
   <script src="assets/js/index.js"></script>
 </body>
 </html>
