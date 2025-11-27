@@ -18,6 +18,8 @@
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.8",
     "path": "^0.12.7",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.10.0",
     "pg": "^8.11.3"
   }
 }

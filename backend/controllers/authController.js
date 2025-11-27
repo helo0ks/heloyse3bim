@@ -13,18 +13,26 @@ exports.login = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM pessoa WHERE email = $1', [email]);
     if (result.rows.length === 0) {
-      return res.status(401).json({ sucesso: false, mensagem: 'Usuário não encontrado.' });
+      return res.status(401).json({ sucesso: false, mensagem: 'Usuário não encontrado.', message: 'User not found.' });
     }
     const user = result.rows[0];
     const senhaValida = await bcrypt.compare(senha, user.senha);
     if (!senhaValida) {
-      return res.status(401).json({ sucesso: false, mensagem: 'Senha incorreta.' });
+      return res.status(401).json({ sucesso: false, mensagem: 'Senha incorreta.', message: 'Invalid password.' });
     }
     const token = jwt.sign({ cpf: user.cpf, email: user.email, tipo: user.tipo }, process.env.JWT_SECRET || 'segredo', { expiresIn: '2h' });
-    res.cookie('token', token, { httpOnly: true, sameSite: 'lax' });
+    // Cookie seguro em produção; sameSite e secure dependem do ambiente
+    const cookieOptions = {
+      httpOnly: true,
+      sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 2 * 60 * 60 * 1000 // 2 horas
+    };
+    res.cookie('token', token, cookieOptions);
     res.json({ sucesso: true, token, usuario: { cpf: user.cpf, nome: user.nome, email: user.email, tipo: user.tipo } });
   } catch (err) {
-    res.status(500).json({ sucesso: false, mensagem: 'Erro ao fazer login.' });
+    console.error('Erro no login:', err);
+    res.status(500).json({ sucesso: false, mensagem: 'Erro ao fazer login.', message: 'Error during login.' });
   }
 };
 
@@ -76,7 +84,8 @@ exports.forgotPassword = async (req, res) => {
     const user = result.rows[0];
     const token = generateResetToken();
     const expires = new Date(Date.now() + 1000 * 60 * 30); // 30 minutos
-    await pool.query('UPDATE pessoa SET reset_token = $1, reset_token_expires = $2 WHERE id = $3', [token, expires, user.id]);
+    // usar cpf como identificador (tabela pessoa usa cpf como PK)
+    await pool.query('UPDATE pessoa SET reset_token = $1, reset_token_expires = $2 WHERE cpf = $3', [token, expires, user.cpf]);
 
     // Configurar o transporte de e-mail (ajuste para seu provedor)
     const transporter = nodemailer.createTransport({
@@ -107,7 +116,8 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ sucesso: false, mensagem: 'Token inválido ou expirado.' });
     }
     const hash = await bcrypt.hash(novaSenha, 10);
-    await pool.query('UPDATE pessoa SET senha = $1, reset_token = NULL, reset_token_expires = NULL WHERE id = $2', [hash, result.rows[0].id]);
+    // atualizar por cpf
+    await pool.query('UPDATE pessoa SET senha = $1, reset_token = NULL, reset_token_expires = NULL WHERE cpf = $2', [hash, result.rows[0].cpf]);
     res.json({ sucesso: true, mensagem: 'Senha redefinida com sucesso!' });
   } catch (err) {
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao redefinir senha.' });

@@ -1,7 +1,22 @@
-// Funções CRUD para pessoas
-const apiUrl = 'http://localhost:3001/pessoas';
+// Funções CRUD para pessoas (admin)
+// Requer autenticação de administrador. Se não autenticado/autoriza, redireciona ao login.
+const apiUrl = 'http://localhost:3001/admin-api/pessoas';
 
-window.onload = listarPessoas;
+function ensureAdmin() {
+    const token = localStorage.getItem('token');
+    const tipo = localStorage.getItem('tipo');
+    if (!token || tipo !== 'admin') {
+        alert('Acesso restrito. Faça login como administrador.');
+        window.location.href = '../login.html';
+        return false;
+    }
+    return true;
+}
+
+window.onload = function() {
+    if (!ensureAdmin()) return;
+    listarPessoas();
+};
 
 document.getElementById('formPessoa').addEventListener('submit', async function(e) {
     e.preventDefault();

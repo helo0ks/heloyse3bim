@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const cargoController = require('./../controllers/cargoController');
+const { verifyToken, isAdmin } = require('./../middleware/authMiddleware');
+
+// Proteger todas as rotas de cargo (apenas administradores)
+router.use(verifyToken, isAdmin);
 
 // CRUD de Cargos
-
 router.get('/abrirCrudCargo', cargoController.abrirCrudCargo);
 router.get('/', cargoController.listarCargos);
 router.post('/', cargoController.criarCargo);

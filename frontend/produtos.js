@@ -1,8 +1,19 @@
-// Funções CRUD para produtos
-const apiUrl = 'http://localhost:3001/produtos';
+// Funções CRUD para produtos (admin)
+const apiUrl = 'http://localhost:3001/admin-api/produtos';
+
+function ensureAdmin() {
+    const token = localStorage.getItem('token');
+    const tipo = localStorage.getItem('tipo');
+    if (!token || tipo !== 'admin') {
+        alert('Acesso restrito. Faça login como administrador.');
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
 
 // Carregar produtos ao abrir a página
-window.onload = listarProdutos;
+window.onload = function() { if (ensureAdmin()) listarProdutos(); };
 
 document.getElementById('formProduto').addEventListener('submit', async function(e) {
     e.preventDefault();

@@ -7,6 +7,9 @@ const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
 // Rota pública para listar produtos (para a loja)
 router.get('/publicos', produtoController.listarProdutosPublicos);
 
+// Rota pública para buscar imagem de um produto (sem autenticação)
+router.get('/:id/imagem', produtoController.buscarImagemProduto);
+
 // Todas as rotas de produto protegidas para admin
 
 // CRUD Produtos

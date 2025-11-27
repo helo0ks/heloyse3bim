@@ -1,8 +1,68 @@
+const { pool } = require('../db');
+const axios = require('axios');
+
+// =====================================================
+// FUNÇÃO AUXILIAR: Baixar imagem como Buffer
+// =====================================================
+async function baixarImagemComoBuffer(imageUrl) {
+  try {
+    if (!imageUrl || imageUrl.trim() === '') {
+      return null;
+    }
+
+    // Verificar se é URL válida
+    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+      return null;
+    }
+
+    // Download da imagem como buffer
+    const response = await axios({
+      method: 'GET',
+      url: imageUrl,
+      responseType: 'arraybuffer',
+      timeout: 10000 // 10 segundos
+    });
+
+    // Retornar {buffer, tipo}
+    const contentType = response.headers['content-type'] || 'image/jpeg';
+    return {
+      buffer: Buffer.from(response.data),
+      tipo: contentType
+    };
+
+  } catch (error) {
+    console.log('Erro ao baixar imagem:', error.message);
+    return null;
+  }
+}
+
+// Buscar imagem de um produto
+exports.buscarImagemProduto = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('SELECT imagem_binaria, imagem_tipo FROM produto WHERE id = $1', [id]);
+    
+    if (result.rows.length === 0 || !result.rows[0].imagem_binaria) {
+      return res.status(404).json({ message: 'Imagem não encontrada' });
+    }
+
+    const { imagem_binaria, imagem_tipo } = result.rows[0];
+    
+    // Enviar imagem com header MIME correto
+    res.set('Content-Type', imagem_tipo || 'image/jpeg');
+    res.set('Cache-Control', 'public, max-age=31536000'); // Cache de 1 ano
+    res.send(imagem_binaria);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: 'Erro ao buscar imagem' });
+  }
+};
+
 // Buscar produto por ID
 exports.buscarProdutoPorId = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM produto WHERE id = $1', [id]);
+    const result = await pool.query('SELECT id, nome, descricao, preco, estoque, imagem_tipo FROM produto WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'Produto não encontrado' });
     }
@@ -17,17 +77,34 @@ exports.editarProduto = async (req, res) => {
   try {
     const { id } = req.params;
     const { nome, descricao, preco, imagem, estoque } = req.body;
-    
-    // Se a imagem mudou e é uma URL, baixar e salvar nova imagem
-    let imagemLocal = imagem;
+
+    // Baixar imagem se for URL
+    let imagemBuffer = null;
+    let imagemTipo = null;
+
     if (imagem && (imagem.startsWith('http://') || imagem.startsWith('https://'))) {
-      imagemLocal = await baixarESalvarImagem(imagem, id);
+      const imagemData = await baixarImagemComoBuffer(imagem);
+      if (imagemData) {
+        imagemBuffer = imagemData.buffer;
+        imagemTipo = imagemData.tipo;
+      }
     }
-    
-    const result = await pool.query(
-      'UPDATE produto SET nome = $1, descricao = $2, preco = $3, imagem = $4, estoque = $5 WHERE id = $6 RETURNING *',
-      [nome, descricao, preco, imagemLocal, estoque, id]
-    );
+
+    // Se imagem foi fornecida, atualizar. Caso contrário, manter a existente
+    let queryText;
+    let params;
+
+    if (imagemBuffer !== null) {
+      // Atualizar incluindo imagem
+      queryText = 'UPDATE produto SET nome = $1, descricao = $2, preco = $3, imagem_binaria = $4, imagem_tipo = $5, estoque = $6 WHERE id = $7 RETURNING id, nome, descricao, preco, estoque, imagem_tipo';
+      params = [nome, descricao, preco, imagemBuffer, imagemTipo, estoque, id];
+    } else {
+      // Atualizar sem mudar imagem
+      queryText = 'UPDATE produto SET nome = $1, descricao = $2, preco = $3, estoque = $4 WHERE id = $5 RETURNING id, nome, descricao, preco, estoque, imagem_tipo';
+      params = [nome, descricao, preco, estoque, id];
+    }
+
+    const result = await pool.query(queryText, params);
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Produto não encontrado' });
     }
@@ -42,112 +119,42 @@ exports.editarProduto = async (req, res) => {
 exports.excluirProduto = async (req, res) => {
   try {
     const { id } = req.params;
-    
-    // Buscar produto para obter caminho da imagem
-    const produtoResult = await pool.query('SELECT imagem FROM produto WHERE id = $1', [id]);
-    
+
     const result = await pool.query('DELETE FROM produto WHERE id = $1 RETURNING *', [id]);
     if (result.rowCount === 0) {
       return res.status(404).json({ message: 'Produto não encontrado' });
     }
-    
-    // Remover arquivo de imagem se existir
-    if (produtoResult.rows.length > 0 && produtoResult.rows[0].imagem) {
-      const imagemPath = produtoResult.rows[0].imagem;
-      if (imagemPath.startsWith('img/')) {
-        const caminhoCompleto = path.join(__dirname, '../../frontend', imagemPath);
-        try {
-          if (fs.existsSync(caminhoCompleto)) {
-            fs.unlinkSync(caminhoCompleto);
-            console.log('Imagem removida:', caminhoCompleto);
-          }
-        } catch (error) {
-          console.log('Erro ao remover imagem:', error.message);
-        }
-      }
-    }
-    
+
     res.json({ message: 'Produto excluído com sucesso' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Erro ao excluir produto' });
   }
 };
-const { pool } = require('../db');
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 
-// Função para baixar e salvar imagem
-async function baixarESalvarImagem(imageUrl, produtoId) {
-  try {
-    if (!imageUrl || imageUrl.trim() === '') {
-      return '';
-    }
-
-    // Verificar se a URL é válida
-    if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
-      return imageUrl; // Se não for URL, retorna como está
-    }
-
-    // Fazer download da imagem
-    const response = await axios({
-      method: 'GET',
-      url: imageUrl,
-      responseType: 'stream',
-      timeout: 10000 // 10 segundos de timeout
-    });
-
-    // Obter extensão do arquivo a partir da URL ou Content-Type
-    let extensao = '.jpg'; // padrão
-    const contentType = response.headers['content-type'];
-    if (contentType) {
-      if (contentType.includes('png')) extensao = '.png';
-      else if (contentType.includes('gif')) extensao = '.gif';
-      else if (contentType.includes('webp')) extensao = '.webp';
-      else if (contentType.includes('jpeg') || contentType.includes('jpg')) extensao = '.jpg';
-    }
-
-    // Definir caminho do arquivo
-    const nomeArquivo = `produto_${produtoId}${extensao}`;
-    const caminhoCompleto = path.join(__dirname, '../../frontend/img', nomeArquivo);
-
-    // Criar diretório se não existir
-    const diretorioImg = path.dirname(caminhoCompleto);
-    if (!fs.existsSync(diretorioImg)) {
-      fs.mkdirSync(diretorioImg, { recursive: true });
-    }
-
-    // Salvar arquivo
-    const writer = fs.createWriteStream(caminhoCompleto);
-    response.data.pipe(writer);
-
-    return new Promise((resolve, reject) => {
-      writer.on('finish', () => {
-        // Retornar caminho relativo para usar no frontend
-        resolve(`img/${nomeArquivo}`);
-      });
-      writer.on('error', reject);
-    });
-
-  } catch (error) {
-    console.log('Erro ao baixar imagem:', error.message);
-    return imageUrl; // Se der erro, retorna a URL original
-  }
-}
-
-// Cadastrar novo produto (com ID manual)
+// Cadastrar novo produto (com upload de imagem como BLOB)
 exports.cadastrarProduto = async (req, res) => {
   try {
     const { id, nome, descricao, preco, imagem, estoque } = req.body;
-    
-    // Baixar e salvar imagem se for uma URL
-    const imagemLocal = await baixarESalvarImagem(imagem, id);
-    
+
+    // Baixar imagem se for URL e converter para Buffer
+    let imagemBuffer = null;
+    let imagemTipo = null;
+
+    if (imagem) {
+      const imagemData = await baixarImagemComoBuffer(imagem);
+      if (imagemData) {
+        imagemBuffer = imagemData.buffer;
+        imagemTipo = imagemData.tipo;
+      }
+    }
+
+    // INSERT com BLOB
     const result = await pool.query(
-      'INSERT INTO produto (id, nome, descricao, preco, imagem, estoque) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [id, nome, descricao, preco, imagemLocal, estoque]
+      'INSERT INTO produto (id, nome, descricao, preco, imagem_binaria, imagem_tipo, estoque) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, nome, descricao, preco, estoque, imagem_tipo',
+      [id, nome, descricao, preco, imagemBuffer, imagemTipo, estoque]
     );
+
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.log(err);
@@ -158,7 +165,7 @@ exports.cadastrarProduto = async (req, res) => {
 // Listar todos os produtos
 exports.listarProdutos = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM produto');
+    const result = await pool.query('SELECT id, nome, descricao, preco, estoque, imagem_tipo FROM produto ORDER BY id');
     res.json(result.rows);
   } catch (err) {
     console.log(err);
@@ -166,11 +173,15 @@ exports.listarProdutos = async (req, res) => {
   }
 };
 
-// Listar produtos públicos (sem autenticação) - para a loja
+// Listar produtos públicos (loja) - sem BLOB, apenas metadados
 exports.listarProdutosPublicos = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT id, nome, descricao, preco, imagem, estoque as quantidade, 
+      SELECT id, nome, descricao, preco, estoque as quantidade,
+             CASE 
+               WHEN imagem_tipo IS NOT NULL THEN '/admin-api/produtos/' || id || '/imagem'
+               ELSE NULL 
+             END as imagem,
              CASE 
                WHEN categoria IS NULL THEN 'Pelúcia' 
                ELSE categoria 

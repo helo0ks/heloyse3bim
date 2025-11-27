@@ -1,27 +1,21 @@
 // produtos_pessoas.js - CRUD integrado de produtos, pessoas e cargos
 
-// Verificação de segurança - apenas admins
+// Verificação de segurança - apenas admins (usando token/tipo no localStorage)
 function verificarPermissaoAdmin() {
-    if (!window.authManager || !window.authManager.isLoggedIn()) {
-        alert('Sessão expirada. Redirecionando para login...');
+    const token = localStorage.getItem('token');
+    const tipo = localStorage.getItem('tipo');
+    if (!token || tipo !== 'admin') {
+        alert('Sessão expirada ou sem permissão. Redirecionando para login...');
         window.location.href = 'login.html';
         return false;
     }
-    
-    const userInfo = window.authManager.getUserInfo();
-    if (userInfo.type !== 'admin') {
-        alert('Acesso negado! Apenas administradores podem gerenciar os dados.');
-        window.location.href = 'index.html';
-        return false;
-    }
-    
     return true;
 }
 
-// --- APIs ---
-const apiProdutos = 'http://localhost:3001/produtos';
-const apiPessoas = 'http://localhost:3001/pessoas';
-const apiCargos = 'http://localhost:3001/cargo';
+// --- APIs (admin) ---
+const apiProdutos = 'http://localhost:3001/admin-api/produtos';
+const apiPessoas = 'http://localhost:3001/admin-api/pessoas';
+const apiCargos = 'http://localhost:3001/admin-api/cargo';
 const apiPedidos = 'http://localhost:3001/pedidos';
 
 // Alternância de seções

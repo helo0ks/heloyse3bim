@@ -90,11 +90,12 @@ class AuthManager {
     // HTML da navegação para usuários logados
     getLoggedInNavigation(userInfo) {
         const isAdmin = userInfo.type === 'admin';
-        
+        // Origem do painel admin. Por enquanto usa localhost:3001. Em produção, pode ser separado.
+        const ADMIN_ORIGIN = 'http://localhost:3001';
         return `
             <span class="user-welcome">Olá, ${userInfo.name}!</span>
             <a href="index.html">Início</a>
-            ${isAdmin ? '<a href="produtos.html" class="admin-link">Gerenciar</a>' : ''}
+            ${isAdmin ? `<a href="${ADMIN_ORIGIN}/produtos.html" class="admin-link">Gerenciar</a>` : ''}
             <a href="carrinho.html" id="nav-carrinho">Carrinho</a>
             <a href="#" id="logout-btn" class="logout-btn">Sair</a>
         `;
@@ -172,8 +173,9 @@ class AuthManager {
     redirectIfLoggedIn() {
         if (this.isLoggedIn()) {
             const userInfo = this.getUserInfo();
+            const ADMIN_ORIGIN = 'http://localhost:3001';
             if (userInfo.type === 'admin') {
-                window.location.href = 'produtos.html';
+                window.location.href = `${ADMIN_ORIGIN}/produtos.html`;
             } else {
                 window.location.href = 'index.html';
             }

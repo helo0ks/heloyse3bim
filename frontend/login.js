@@ -1,5 +1,7 @@
 // login.js - Lógica de login e redirecionamento por tipo de usuário
 const apiUrl = 'http://localhost:3001/auth/login';
+// Origem do painel admin. Por enquanto usa a mesma origem. Em produção, pode ser separado.
+const ADMIN_ORIGIN = 'http://localhost:3001';
 
 document.getElementById('login-form').addEventListener('submit', async function(e) {
     e.preventDefault();
@@ -33,7 +35,8 @@ document.getElementById('login-form').addEventListener('submit', async function(
         
         // Redireciona conforme o tipo
         if (data.usuario.tipo === 'admin') {
-            window.location.href = 'produtos.html';
+            // Redireciona para o painel administrativo em outro host/porta
+            window.location.href = `${ADMIN_ORIGIN}/produtos.html`;
         } else {
             window.location.href = 'index.html'; // ou página do cliente
         }

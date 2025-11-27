@@ -1,5 +1,15 @@
-// Configuração da API, IP e porta.
-const API_BASE_URL = 'http://localhost:3001';
+// Configuração da API admin (somente para administradores)
+const API_BASE_URL = 'http://localhost:3001/admin-api';
+function ensureAdmin() {
+    const token = localStorage.getItem('token');
+    const tipo = localStorage.getItem('tipo');
+    if (!token || tipo !== 'admin') {
+        alert('Acesso restrito. Faça login como administrador.');
+        window.location.href = '../login.html';
+        return false;
+    }
+    return true;
+}
 let currentPersonId = null;
 let operacao = null;
 
@@ -17,6 +27,7 @@ const messageContainer = document.getElementById('messageContainer');
 
 // Carregar lista de cargos ao inicializar
 document.addEventListener('DOMContentLoaded', () => {
+    if (!ensureAdmin()) return;
     carregarCargos();
 });
 
