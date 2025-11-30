@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Produtos - Loja Snoopy</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/crud.css">
+</head>
+<body>
+    <div id="main-content">
+        <!-- Seletor de CRUD -->
+        <div class="crud-selector">
+            <div class="crud-controls">
+                <label for="crudSelect">Selecionar CRUD:</label>
+                <select id="crudSelect" class="crud-select">
+                    <option value="produtos" selected>Gerenciar Produtos</option>
+                    <option value="pessoas">Gerenciar Pessoas</option>
+                    <option value="cargos">Gerenciar Cargos</option>
+                    <option value="pedidos">Gerenciar Pedidos</option>
+                    <option value="relatorios">Gerar Relatórios</option>
+                </select>
+            </div>
+            <div class="crud-navigation">
+                <a href="../index.html" class="btn-voltar-menu">← Voltar ao Menu</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de mensagens -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <!-- Seção de Produtos -->
+    <div id="secaoProdutos">
+        <h1 class="crud-title">Cadastro de Produtos</h1>
+        
+        <form id="formProduto" autocomplete="off">
+            <label for="id">ID:</label>
+            <input type="number" id="id" name="id" min="1" required><br>
+            <button type="button" id="btnBuscarId">Buscar por ID</button><br>
+            
+            <label for="nome">Nome:</label>
+            <input type="text" id="nome" name="nome" required><br>
+            
+            <label for="descricao">Descrição:</label>
+            <textarea id="descricao" name="descricao"></textarea><br>
+            
+            <label for="preco">Preço:</label>
+            <input type="number" id="preco" name="preco" step="0.01" required><br>
+            
+            <label for="imagemArquivo">Imagem do produto (upload):</label>
+            <input type="file" id="imagemArquivo" name="imagemArquivo" accept="image/*"><br>
+            <small id="imagemAtualInfo" style="display:block;color:#555;margin-bottom:10px;">Sem imagem carregada</small>
+            
+            <label for="estoque">Estoque:</label>
+            <input type="number" id="estoque" name="estoque" min="0" required><br>
+            
+            <span id="msgIdNaoExiste" style="display:none;color:#c62828;font-weight:bold;">ID não existente</span><br>
+            <button type="submit" id="btnCadastrarProduto">Cadastrar/Atualizar Produto</button>
+        </form>
+
+        <h2>Produtos Cadastrados</h2>
+        <table id="tabelaProdutos" border="1">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>Preço</th>
+                    <th>Imagem</th>
+                    <th>Estoque</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Produtos serão inseridos aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="utils.js"></script>
+    <script src="produtos.js"></script>
+</body>
+</html>

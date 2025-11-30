@@ -14,6 +14,7 @@ document.getElementById('login-form').addEventListener('submit', async function(
         const resp = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include', // Importante: envia e recebe cookies
             body: JSON.stringify({ email, senha })
         });
         const data = await resp.json();
@@ -22,16 +23,18 @@ document.getElementById('login-form').addEventListener('submit', async function(
             mensagemErro.style.display = 'block';
             return;
         }
-        // Armazena o token e dados do usuário em localStorage e cookies
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('tipo', data.usuario.tipo);
+        // O token JWT é salvo automaticamente pelo backend no cookie httpOnly 'token'
+        // Aqui salvamos apenas dados para exibição na UI (não sensíveis)
+        // IMPORTANTE: NÃO salvamos o token no localStorage por segurança
         
-        // Salva informações em cookies que duram 7 dias
-        setCookie('authToken', data.token, 7);
+        // Cookies locais apenas para informações de UI
         setCookie('userType', data.usuario.tipo, 7);
         setCookie('userName', data.usuario.nome || data.usuario.email, 7);
         setCookie('userCpf', data.usuario.cpf, 7);
         setCookie('isLoggedIn', 'true', 7);
+        
+        // Mantém localStorage apenas para compatibilidade temporária (será removido)
+        localStorage.setItem('tipo', data.usuario.tipo);
         
         // Redireciona conforme o tipo
         if (data.usuario.tipo === 'admin') {

@@ -11,6 +11,7 @@ const produtoRoutes = require('./routes/produto');
 const pessoaRoutes = require('./routes/pessoa');
 const cargoRoutes = require('./routes/cargoRoutes');
 const pedidoRoutes = require('./routes/pedido');
+const relatoriosRoutes = require('./routes/relatorios');
 const { verifyToken, isAdmin } = require('./middleware/authMiddleware');
 
 const app = express();
@@ -72,6 +73,7 @@ app.use('/produtos', produtoRoutes);  // mantém rota pública para listagem (/p
 app.use('/admin-api/produtos', verifyToken, isAdmin, produtoRoutes);
 app.use('/admin-api/pessoas', verifyToken, isAdmin, pessoaRoutes);
 app.use('/admin-api/cargo', verifyToken, isAdmin, cargoRoutes);
+app.use('/admin-api/relatorios', verifyToken, isAdmin, relatoriosRoutes);
 
 // Removidas montagens públicas de rotas administrativas para aumentar segurança.
 // Agora as rotas administrativas só estão disponíveis sob o prefixo `/admin-api/*`.

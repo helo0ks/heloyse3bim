@@ -3,21 +3,21 @@ const router = express.Router();
 
 const produtoController = require('../controllers/produtoController');
 const { verifyToken, isAdmin } = require('../middleware/authMiddleware');
+const { upload } = require('../middleware/uploadMiddleware');
 
-// Rota pública para listar produtos (para a loja)
+// Rotas públicas (SEM autenticação) - DEVEM VIR PRIMEIRO
+// Rotas específicas ANTES de rotas dinâmicas
 router.get('/publicos', produtoController.listarProdutosPublicos);
 
-// Rota pública para buscar imagem de um produto (sem autenticação)
-router.get('/:id/imagem', produtoController.buscarImagemProduto);
-
-// Todas as rotas de produto protegidas para admin
-
-// CRUD Produtos
-
-router.post('/', verifyToken, isAdmin, produtoController.cadastrarProduto);
+// CRUD Produtos (COM autenticação)
+// Rotas dinâmicas com /:id
+// POST com upload opcional via campo 'imagemArquivo'
+router.post('/', verifyToken, isAdmin, upload.single('imagemArquivo'), produtoController.cadastrarProduto);
 router.get('/', verifyToken, isAdmin, produtoController.listarProdutos);
+router.get('/:id/imagem', produtoController.buscarImagemProduto); // IMPORTANTE: Este DEVE estar ANTES de /:id
 router.get('/:id', verifyToken, isAdmin, produtoController.buscarProdutoPorId);
-router.put('/:id', verifyToken, isAdmin, produtoController.editarProduto);
+// PUT com upload opcional via campo 'imagemArquivo'
+router.put('/:id', verifyToken, isAdmin, upload.single('imagemArquivo'), produtoController.editarProduto);
 router.delete('/:id', verifyToken, isAdmin, produtoController.excluirProduto);
 
 module.exports = router;

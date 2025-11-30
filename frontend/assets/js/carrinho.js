@@ -182,9 +182,19 @@ async function finalizarCompra() {
         return;
     }
     
-    // Verificar se o usuário está logado
-    const token = localStorage.getItem('token');
-    if (!token) {
+    // Verificar se o usuário está logado via cookie
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for (let i = 0; i < ca.length; i++) {
+            let c = ca[i].trim();
+            if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+        }
+        return null;
+    }
+    
+    const isLoggedIn = getCookie('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
         if (confirm('Você precisa estar logado para finalizar a compra. Deseja fazer login agora?')) {
             window.location.href = 'login.html';
         }
@@ -224,12 +234,12 @@ async function finalizarCompra() {
             valorTotal: valorTotal
         };
         
-        // Enviar pedido para o backend
+        // Enviar pedido para o backend (usa cookie httpOnly automaticamente)
         const response = await fetch('http://localhost:3001/pedidos/finalizar-carrinho', {
             method: 'POST',
+            credentials: 'include',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + token
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(dadosPedido)
         });

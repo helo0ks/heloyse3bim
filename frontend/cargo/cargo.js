@@ -1,9 +1,37 @@
 // Configuração da API admin (somente para administradores)
 const API_BASE_URL = 'http://localhost:3001/admin-api';
+
+// Helper para ler cookie
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i].trim();
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+    }
+    return null;
+}
+
+// Helper para fazer requisições autenticadas via cookie httpOnly
+async function fetchAuth(url, options = {}) {
+    const response = await fetch(url, { 
+        ...options, 
+        credentials: 'include'
+    });
+    
+    if (response.status === 401) {
+        alert('Sessão expirada. Faça login novamente.');
+        window.location.href = '../login.html';
+        return null;
+    }
+    
+    return response;
+}
+
 function ensureAdmin() {
-    const token = localStorage.getItem('token');
-    const tipo = localStorage.getItem('tipo');
-    if (!token || tipo !== 'admin') {
+    const isLoggedIn = getCookie('isLoggedIn') === 'true';
+    const tipo = getCookie('userType') || localStorage.getItem('tipo');
+    if (!isLoggedIn || tipo !== 'admin') {
         alert('Acesso restrito. Faça login como administrador.');
         window.location.href = '../login.html';
         return false;

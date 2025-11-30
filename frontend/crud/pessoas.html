@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciar Pessoas - Loja Snoopy</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/crud.css">
+</head>
+<body>
+    <div id="main-content">
+        <!-- Seletor de CRUD -->
+        <div class="crud-selector">
+            <div class="crud-controls">
+                <label for="crudSelect">Selecionar CRUD:</label>
+                <select id="crudSelect" class="crud-select">
+                    <option value="produtos">Gerenciar Produtos</option>
+                    <option value="pessoas" selected>Gerenciar Pessoas</option>
+                    <option value="cargos">Gerenciar Cargos</option>
+                    <option value="pedidos">Gerenciar Pedidos</option>
+                    <option value="relatorios">Gerar Relatórios</option>
+                </select>
+            </div>
+            <div class="crud-navigation">
+                <a href="../index.html" class="btn-voltar-menu">← Voltar ao Menu</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de mensagens -->
+    <div id="messageContainer" class="message-container"></div>
+
+    <!-- Seção de Pessoas -->
+    <div id="secaoPessoas">
+        <h1 class="crud-title">Gerenciar Pessoas</h1>
+        
+        <form id="formPessoa" autocomplete="off">
+            <label for="cpf">CPF:</label>
+            <input type="text" id="cpf" name="cpf" required maxlength="14"><br>
+            <button type="button" id="btnBuscarCpf">Buscar por CPF</button><br>
+            
+            <label for="nomePessoa">Nome:</label>
+            <input type="text" id="nomePessoa" name="nomePessoa" required><br>
+            
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required><br>
+            
+            <label for="senha">Senha:</label>
+            <input type="password" id="senha" name="senha"><br>
+            
+            <label for="tipo">Tipo:</label>
+            <select id="tipo" name="tipo">
+                <option value="cliente">Cliente</option>
+                <option value="admin">Admin</option>
+            </select><br>
+            
+            <span id="msgCpfNaoExiste" style="display:none;color:#c62828;font-weight:bold;">CPF não encontrado</span><br>
+            <button type="submit">Cadastrar/Atualizar Pessoa</button>
+        </form>
+
+        <h2>Pessoas Cadastradas</h2>
+        <table id="tabelaPessoas" border="1">
+            <thead>
+                <tr>
+                    <th>CPF</th>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Tipo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Pessoas serão inseridas aqui -->
+            </tbody>
+        </table>
+    </div>
+
+    <script src="../assets/js/auth.js"></script>
+    <script src="utils.js"></script>
+    <script src="pessoas.js"></script>
+</body>
+</html>

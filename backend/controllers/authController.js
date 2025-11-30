@@ -123,3 +123,25 @@ exports.resetPassword = async (req, res) => {
     res.status(500).json({ sucesso: false, mensagem: 'Erro ao redefinir senha.' });
   }
 };
+
+// Logout - limpa o cookie de autenticação
+exports.logout = (req, res) => {
+  const cookieOptions = {
+    httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/'
+  };
+  res.clearCookie('token', cookieOptions);
+  res.json({ sucesso: true, mensagem: 'Logout realizado com sucesso.' });
+};
+
+// Verifica se o usuário está autenticado (para o frontend verificar sessão)
+exports.checkSession = (req, res) => {
+  // Se chegou aqui, o middleware verifyToken já validou
+  res.json({ 
+    sucesso: true, 
+    usuario: req.user,
+    mensagem: 'Sessão válida.' 
+  });
+};

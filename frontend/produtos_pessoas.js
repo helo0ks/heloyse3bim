@@ -1,10 +1,37 @@
 // produtos_pessoas.js - CRUD integrado de produtos, pessoas e cargos
 
-// Verificação de segurança - apenas admins (usando token/tipo no localStorage)
+// Helper para ler cookie
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i].trim();
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+    }
+    return null;
+}
+
+// Helper para fazer requisições autenticadas via cookie httpOnly
+async function fetchAuth(url, options = {}) {
+    const response = await fetch(url, { 
+        ...options, 
+        credentials: 'include' // Envia cookie httpOnly automaticamente
+    });
+    
+    if (response.status === 401) {
+        alert('Sessão expirada. Faça login novamente.');
+        window.location.href = 'login.html';
+        return null;
+    }
+    
+    return response;
+}
+
+// Verificação de segurança - apenas admins (usando cookies)
 function verificarPermissaoAdmin() {
-    const token = localStorage.getItem('token');
-    const tipo = localStorage.getItem('tipo');
-    if (!token || tipo !== 'admin') {
+    const isLoggedIn = getCookie('isLoggedIn') === 'true';
+    const tipo = getCookie('userType') || localStorage.getItem('tipo');
+    if (!isLoggedIn || tipo !== 'admin') {
         alert('Sessão expirada ou sem permissão. Redirecionando para login...');
         window.location.href = 'login.html';
         return false;
@@ -24,6 +51,20 @@ const secaoProdutos = document.getElementById('secaoProdutos');
 const secaoPessoas = document.getElementById('secaoPessoas');
 const secaoCargo = document.getElementById('secaoCargo');
 const secaoPedidos = document.getElementById('secaoPedidos');
+const imagemAtualInfo = document.getElementById('imagemAtualInfo');
+
+function atualizarImagemAtualInfo(path) {
+    if (!imagemAtualInfo) return;
+    if (path) {
+        const baseUrl = path.startsWith('http') ? path : `http://localhost:3001${path}`;
+        const urlAbsoluta = `${baseUrl}?t=${Date.now()}`; // cache-buster
+        imagemAtualInfo.innerHTML = `Imagem atual: <a href="${urlAbsoluta}" target="_blank" rel="noopener">abrir em nova aba</a>`;
+    } else {
+        imagemAtualInfo.textContent = 'Sem imagem carregada';
+    }
+}
+
+atualizarImagemAtualInfo(null);
 
 crudSelect.onchange = () => {
     const selectedValue = crudSelect.value;
@@ -32,6 +73,9 @@ crudSelect.onchange = () => {
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = 'none';
         secaoPedidos.style.display = 'none';
+    } else if (selectedValue === 'relatorios') {
+        // Redireciona para a página de relatórios
+        window.location.href = 'relatorios.html';
     } else if (selectedValue === 'pessoas') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = '';
@@ -69,6 +113,8 @@ window.onload = function() {
         secaoPessoas.style.display = 'none';
         secaoCargo.style.display = 'none';
         secaoPedidos.style.display = 'none';
+    } else if (selectedValue === 'relatorios') {
+        window.location.href = 'relatorios.html';
     } else if (selectedValue === 'pessoas') {
         secaoProdutos.style.display = 'none';
         secaoPessoas.style.display = '';
@@ -91,17 +137,15 @@ window.onload = function() {
 document.getElementById('btnBuscarId').onclick = async function() {
     const id = document.getElementById('id').value;
     if (!id) return alert('Digite um ID para buscar!');
-    const token = localStorage.getItem('token');
     try {
-        const resp = await fetch(`${apiProdutos}/${id}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const resp = await fetchAuth(`${apiProdutos}/${id}`);
+        if (!resp) return;
         if (resp.ok) {
             const produto = await resp.json();
             document.getElementById('nome').value = produto.nome;
             document.getElementById('descricao').value = produto.descricao;
             document.getElementById('preco').value = produto.preco;
-            document.getElementById('imagem').value = produto.imagem;
+            atualizarImagemAtualInfo(produto.imagem);
             document.getElementById('estoque').value = produto.estoque;
             document.getElementById('formProduto').dataset.editando = 'true';
             document.getElementById('msgIdNaoExiste').style.display = 'none';
@@ -111,6 +155,7 @@ document.getElementById('btnBuscarId').onclick = async function() {
             document.getElementById('id').value = id;
             document.getElementById('formProduto').dataset.editando = '';
             document.getElementById('msgIdNaoExiste').style.display = 'inline';
+            atualizarImagemAtualInfo(null);
         }
     } catch (e) {
         alert('Erro ao buscar produto!');
@@ -119,32 +164,31 @@ document.getElementById('btnBuscarId').onclick = async function() {
 
 document.getElementById('formProduto').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const produto = {
-        id: parseInt(document.getElementById('id').value),
-        nome: document.getElementById('nome').value,
-        descricao: document.getElementById('descricao').value,
-        preco: parseFloat(document.getElementById('preco').value),
-        imagem: document.getElementById('imagem').value,
-        estoque: parseInt(document.getElementById('estoque').value)
-    };
+    const arquivo = document.getElementById('imagemArquivo').files[0] || null;
+    const form = new FormData();
+    form.append('id', parseInt(document.getElementById('id').value));
+    form.append('nome', document.getElementById('nome').value);
+    form.append('descricao', document.getElementById('descricao').value);
+    form.append('preco', parseFloat(document.getElementById('preco').value));
+    form.append('estoque', parseInt(document.getElementById('estoque').value));
+    if (arquivo) form.append('imagemArquivo', arquivo);
     
     if (this.dataset.editando === 'true') {
-        await atualizarProduto(produto);
+        await atualizarProduto(form);
     } else {
-        await cadastrarProduto(produto);
+        await cadastrarProduto(form);
     }
     
     this.reset();
     this.dataset.editando = '';
     document.getElementById('msgIdNaoExiste').style.display = 'none';
+    atualizarImagemAtualInfo(null);
     listarProdutos();
 });
 
 async function listarProdutos() {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(apiProdutos, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(apiProdutos);
+    if (!resp) return;
     const produtos = await resp.json();
     const tbody = document.querySelector('#tabelaProdutos tbody');
     tbody.innerHTML = '';
@@ -155,7 +199,7 @@ async function listarProdutos() {
             <td>${produto.nome}</td>
             <td>${produto.descricao || ''}</td>
             <td>R$ ${(Number(produto.preco) || 0).toFixed(2)}</td>
-            <td>${produto.imagem && produto.imagem.trim() && produto.imagem !== '' ? `<img src="${produto.imagem.startsWith('img/') ? 'http://localhost:3001/' + produto.imagem : produto.imagem}" alt="img" width="50" onerror="this.style.display='none'">` : '<span class="sem-imagem">Sem imagem</span>'}</td>
+            <td>${produto.imagem ? `<img src="http://localhost:3001${produto.imagem}?t=${Date.now()}" alt="img" width="50" onerror="this.style.display='none'">` : '<span class="sem-imagem">Sem imagem</span>'}</td>
             <td>${produto.estoque}</td>
             <td>
                 <button onclick="editarProduto(${produto.id})">Editar</button>
@@ -166,56 +210,43 @@ async function listarProdutos() {
     });
 }
 
-async function cadastrarProduto(produto) {
+async function cadastrarProduto(formData) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(apiProdutos, {
+    await fetchAuth(apiProdutos, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify(produto)
+        body: formData
     });
 }
 
-async function atualizarProduto(produto) {
+async function atualizarProduto(formData) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(`${apiProdutos}/${produto.id}`, {
+    const id = formData.get('id');
+    await fetchAuth(`${apiProdutos}/${id}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify(produto)
+        body: formData
     });
 }
 
 async function deletarProduto(id) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(`${apiProdutos}/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
+    await fetchAuth(`${apiProdutos}/${id}`, {
+        method: 'DELETE'
     });
     listarProdutos();
 }
 
 window.editarProduto = async function(id) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(`${apiProdutos}/${id}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(`${apiProdutos}/${id}`);
+    if (!resp) return;
     const produto = await resp.json();
     document.getElementById('id').value = produto.id;
     document.getElementById('nome').value = produto.nome;
     document.getElementById('descricao').value = produto.descricao;
     document.getElementById('preco').value = produto.preco;
-    document.getElementById('imagem').value = produto.imagem;
+    atualizarImagemAtualInfo(produto.imagem);
     document.getElementById('estoque').value = produto.estoque;
     document.getElementById('formProduto').dataset.editando = 'true';
     document.getElementById('msgIdNaoExiste').style.display = 'none';
@@ -247,10 +278,8 @@ document.getElementById('btnBuscarCpf').onclick = async function() {
     if (!cpf) return alert('Digite um CPF para buscar!');
     
     try {
-        const token = localStorage.getItem('token');
-        const resp = await fetch(`${apiPessoas}/${cpf}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const resp = await fetchAuth(`${apiPessoas}/${cpf}`);
+        if (!resp) return;
         
         if (resp.ok) {
             const pessoa = await resp.json();
@@ -276,10 +305,8 @@ document.getElementById('btnBuscarCpf').onclick = async function() {
 };
 
 async function listarPessoas() {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(apiPessoas, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(apiPessoas);
+    if (!resp) return;
     const pessoas = await resp.json();
     const tbody = document.querySelector('#tabelaPessoas tbody');
     tbody.innerHTML = '';
@@ -302,13 +329,9 @@ async function listarPessoas() {
 async function cadastrarPessoa(pessoa) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(apiPessoas, {
+    await fetchAuth(apiPessoas, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pessoa)
     });
 }
@@ -316,13 +339,9 @@ async function cadastrarPessoa(pessoa) {
 async function atualizarPessoa(pessoa) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(`${apiPessoas}/${pessoa.cpf}`, {
+    await fetchAuth(`${apiPessoas}/${pessoa.cpf}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pessoa)
     });
 }
@@ -330,19 +349,15 @@ async function atualizarPessoa(pessoa) {
 async function deletarPessoa(cpf) {
     if (!verificarPermissaoAdmin()) return;
     
-    const token = localStorage.getItem('token');
-    await fetch(`${apiPessoas}/${cpf}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
+    await fetchAuth(`${apiPessoas}/${cpf}`, {
+        method: 'DELETE'
     });
     listarPessoas();
 }
 
 window.editarPessoa = async function(cpf) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(`${apiPessoas}/${cpf}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(`${apiPessoas}/${cpf}`);
+    if (!resp) return;
     const pessoa = await resp.json();
     document.getElementById('cpf').value = pessoa.cpf;
     document.getElementById('nomePessoa').value = pessoa.nome;
@@ -486,31 +501,25 @@ let formasPagamentoPedidos = [];
 
 // Carregar dados auxiliares para pedidos
 async function carregarDadosAuxiliaresPedidos() {
-    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
-    const token = userInfo ? userInfo.token : localStorage.getItem('token');
     try {
         // Carregar clientes
-        const respClientes = await fetch(`${apiPedidos}/auxiliar/clientes`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const respClientes = await fetchAuth(`${apiPedidos}/auxiliar/clientes`);
+        if (!respClientes) return;
         clientesPedidos = await respClientes.json();
 
         // Carregar funcionários
-        const respFuncionarios = await fetch(`${apiPedidos}/auxiliar/funcionarios`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const respFuncionarios = await fetchAuth(`${apiPedidos}/auxiliar/funcionarios`);
+        if (!respFuncionarios) return;
         funcionariosPedidos = await respFuncionarios.json();
 
         // Carregar produtos
-        const respProdutos = await fetch(`${apiPedidos}/auxiliar/produtos`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const respProdutos = await fetchAuth(`${apiPedidos}/auxiliar/produtos`);
+        if (!respProdutos) return;
         produtosPedidos = await respProdutos.json();
 
         // Carregar formas de pagamento
-        const respFormas = await fetch(`${apiPedidos}/auxiliar/formas-pagamento`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const respFormas = await fetchAuth(`${apiPedidos}/auxiliar/formas-pagamento`);
+        if (!respFormas) return;
         formasPagamentoPedidos = await respFormas.json();
 
         // Preencher dropdowns
@@ -739,11 +748,9 @@ document.getElementById('btnBuscarPedido').onclick = async function() {
     const id = document.getElementById('idPedido').value;
     if (!id) return alert('Digite um ID para buscar!');
     
-    const token = localStorage.getItem('token');
     try {
-        const resp = await fetch(`${apiPedidos}/${id}`, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const resp = await fetchAuth(`${apiPedidos}/${id}`);
+        if (!resp) return;
         
         if (resp.ok) {
             const pedido = await resp.json();
@@ -878,13 +885,9 @@ document.getElementById('formPedido').onsubmit = async function(e) {
 async function listarPedidos() {
     try {
         console.log('=== CARREGANDO PEDIDOS ===');
-        const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
-        const token = userInfo ? userInfo.token : localStorage.getItem('token');
-        console.log('Token:', token ? 'Presente' : 'Ausente');
         
-        const resp = await fetch(apiPedidos, {
-            headers: { 'Authorization': 'Bearer ' + token }
-        });
+        const resp = await fetchAuth(apiPedidos);
+        if (!resp) return;
         
         console.log('Status da resposta:', resp.status);
         
@@ -941,14 +944,9 @@ async function listarPedidos() {
 async function cadastrarPedido(pedido) {
     if (!verificarPermissaoAdmin()) return;
     
-    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
-    const token = userInfo ? userInfo.token : localStorage.getItem('token');
-    await fetch(apiPedidos, {
+    await fetchAuth(apiPedidos, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pedido)
     });
 }
@@ -956,14 +954,9 @@ async function cadastrarPedido(pedido) {
 async function atualizarPedido(pedido) {
     if (!verificarPermissaoAdmin()) return;
     
-    const userInfo = window.authManager ? window.authManager.getUserInfo() : null;
-    const token = userInfo ? userInfo.token : localStorage.getItem('token');
-    await fetch(`${apiPedidos}/${pedido.idPedido}`, {
+    await fetchAuth(`${apiPedidos}/${pedido.idPedido}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pedido)
     });
 }
@@ -973,11 +966,10 @@ window.deletarPedido = async function(id) {
     
     if (confirm('Tem certeza que deseja excluir este pedido?')) {
         try {
-            const token = localStorage.getItem('token');
-            const resp = await fetch(`${apiPedidos}/${id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': 'Bearer ' + token }
+            const resp = await fetchAuth(`${apiPedidos}/${id}`, {
+                method: 'DELETE'
             });
+            if (!resp) return;
             
             if (resp.ok) {
                 alert('Pedido excluído com sucesso!');

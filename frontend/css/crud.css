@@ -1,3 +1,305 @@
+/* Permitir rolagem vertical nas páginas de CRUD/Relatórios */
+html, body {
+    height: auto;
+    min-height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+.container {
+    height: 100vh;
+    width: 100vw;
+    padding: 16px;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+
+/* === RELATÓRIOS TELA CHEIA === */
+.relatorios-fullpage {
+    min-height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+    overflow-x: hidden;
+    overflow-y: auto !important;
+    overflow: auto !important;
+}
+
+.relatorios-header {
+    background: linear-gradient(135deg, #8e4f8e, #c167c1);
+    color: white;
+    text-align: center;
+    padding: 1.5rem 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.relatorios-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.relatorios-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 24px 40px;
+    box-sizing: border-box;
+}
+
+.relatorio-section {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin-top: 20px;
+}
+
+.relatorio-section h2 {
+    color: #8e4f8e;
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 3px solid #ff69b4;
+    padding-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 12px 20px;
+    border-radius: 8px;
+}
+
+.relatorio-section h3 {
+    color: #8e4f8e;
+    font-size: 1.3rem;
+    margin: 24px 0 12px 0;
+}
+
+.relatorio-section .table-wrapper {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 0;
+    box-shadow: 0 4px 15px rgba(142, 79, 142, 0.1);
+    overflow: hidden;
+}
+
+.relatorio-section table {
+    margin-bottom: 0;
+}
+
+.relatorio-section .charts {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(142, 79, 142, 0.1);
+    margin-top: 24px;
+}
+
+.relatorio-section .split {
+    background: transparent;
+}
+
+.relatorio-section .split .half {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(142, 79, 142, 0.1);
+}
+
+.relatorio-section .split .half .table-wrapper {
+    box-shadow: none;
+}
+
+/* Topbar de relatórios */
+.relatorios-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-bottom: 24px;
+    padding: 20px 24px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(142, 79, 142, 0.1);
+}
+
+.relatorios-nav {
+    margin-bottom: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    flex: 1;
+}
+
+.relatorios-cards {
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .relatorios-topbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .relatorios-cards {
+        justify-content: center;
+    }
+}
+
+/* Tabelas grandes: contêiner rolável */
+.table-wrapper {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+/* Gráficos responsivos com rolagem se necessário */
+.charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.charts canvas {
+    width: 100% !important;
+    height: 420px !important;
+}
+
+/* Tela cheia para relatórios */
+.full-page {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* KPIs Cards */
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.kpi-card {
+    background: linear-gradient(135deg, #8e4f8e 0%, #c167c1 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(142, 79, 142, 0.3);
+}
+
+.kpi-label {
+    display: block;
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-bottom: 8px;
+}
+
+.kpi-value {
+    display: block;
+    font-size: 1.6rem;
+    font-weight: bold;
+}
+
+.kpi-unit {
+    display: block;
+    font-size: 0.75rem;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* Filtro de período */
+.filtro-periodo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: rgba(255, 240, 250, 0.9);
+    border-radius: 8px;
+    border: 1px solid #e0c0e0;
+}
+
+.filtro-periodo label {
+    font-weight: 500;
+    color: #8e4f8e;
+}
+
+.filtro-periodo select {
+    padding: 8px 12px;
+    border: 1px solid #c167c1;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+}
+
+.filtro-periodo button {
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.filtro-periodo button:hover {
+    background: linear-gradient(135deg, #ff1493, #dc143c);
+}
+
+/* Split layout melhorado */
+.split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.half h3 {
+    margin-bottom: 12px;
+    color: #8e4f8e;
+}
+
+/* Cards de seleção de relatório */
+.cards {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.card {
+    background: linear-gradient(135deg, #ff69b4, #ff1493);
+    color: white;
+    border: none;
+    padding: 20px 32px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(255, 105, 180, 0.3);
+}
+
+.card:hover {
+    background: linear-gradient(135deg, #ff1493, #dc143c);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(255, 105, 180, 0.4);
+}
+
+@media (max-width: 768px) {
+    .split {
+        grid-template-columns: 1fr;
+    }
+    .kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .cards {
+        flex-direction: column;
+    }
+}
 /* Reset e configurações básicas */
 * {
     margin: 0;

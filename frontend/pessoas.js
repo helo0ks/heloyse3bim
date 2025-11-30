@@ -2,10 +2,37 @@
 // Requer autenticação de administrador. Se não autenticado/autoriza, redireciona ao login.
 const apiUrl = 'http://localhost:3001/admin-api/pessoas';
 
+// Helper para ler cookie
+function getCookie(name) {
+    const nameEQ = name + "=";
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i].trim();
+        if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length);
+    }
+    return null;
+}
+
+// Helper para fazer requisições autenticadas via cookie httpOnly
+async function fetchAuth(url, options = {}) {
+    const response = await fetch(url, { 
+        ...options, 
+        credentials: 'include'
+    });
+    
+    if (response.status === 401) {
+        alert('Sessão expirada. Faça login novamente.');
+        window.location.href = '../login.html';
+        return null;
+    }
+    
+    return response;
+}
+
 function ensureAdmin() {
-    const token = localStorage.getItem('token');
-    const tipo = localStorage.getItem('tipo');
-    if (!token || tipo !== 'admin') {
+    const isLoggedIn = getCookie('isLoggedIn') === 'true';
+    const tipo = getCookie('userType') || localStorage.getItem('tipo');
+    if (!isLoggedIn || tipo !== 'admin') {
         alert('Acesso restrito. Faça login como administrador.');
         window.location.href = '../login.html';
         return false;
@@ -38,10 +65,8 @@ document.getElementById('formPessoa').addEventListener('submit', async function(
 });
 
 async function listarPessoas() {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(apiUrl, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(apiUrl);
+    if (!resp) return;
     const pessoas = await resp.json();
     const tbody = document.querySelector('#tabelaPessoas tbody');
     tbody.innerHTML = '';
@@ -62,43 +87,31 @@ async function listarPessoas() {
 }
 
 async function cadastrarPessoa(pessoa) {
-    const token = localStorage.getItem('token');
-    await fetch(apiUrl, {
+    await fetchAuth(apiUrl, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pessoa)
     });
 }
 
 async function atualizarPessoa(pessoa) {
-    const token = localStorage.getItem('token');
-    await fetch(`${apiUrl}/${pessoa.cpf}`, {
+    await fetchAuth(`${apiUrl}/${pessoa.cpf}`, {
         method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pessoa)
     });
 }
 
 async function deletarPessoa(cpf) {
-    const token = localStorage.getItem('token');
-    await fetch(`${apiUrl}/${cpf}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + token }
+    await fetchAuth(`${apiUrl}/${cpf}`, {
+        method: 'DELETE'
     });
     listarPessoas();
 }
 
 async function editarPessoa(cpf) {
-    const token = localStorage.getItem('token');
-    const resp = await fetch(`${apiUrl}/${cpf}`, {
-        headers: { 'Authorization': 'Bearer ' + token }
-    });
+    const resp = await fetchAuth(`${apiUrl}/${cpf}`);
+    if (!resp) return;
     const pessoa = await resp.json();
     document.getElementById('cpf').value = pessoa.cpf;
     document.getElementById('nome').value = pessoa.nome;

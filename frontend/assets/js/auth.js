@@ -1,13 +1,58 @@
 // auth.js - Sistema de autenticação e gerenciamento de menu
+const API_BASE = 'http://localhost:3001';
+
 class AuthManager {
     constructor() {
         this.init();
     }
 
     // Inicializa o sistema de autenticação
-    init() {
+    async init() {
+        // Verifica sessão no servidor antes de atualizar navegação
+        await this.verifySession();
         this.updateNavigation();
         this.setupEventListeners();
+    }
+
+    // Verifica se a sessão é válida no servidor
+    async verifySession() {
+        // Só verifica se há indício de login
+        if (!this.getCookie('isLoggedIn')) {
+            this._sessionValid = false;
+            return;
+        }
+        
+        try {
+            const resp = await fetch(`${API_BASE}/auth/check-session`, {
+                method: 'GET',
+                credentials: 'include' // Envia cookie httpOnly
+            });
+            
+            if (resp.ok) {
+                const data = await resp.json();
+                this._sessionValid = true;
+                this._userData = data.usuario;
+            } else {
+                // Sessão inválida - limpa dados locais
+                this._sessionValid = false;
+                this.clearLocalAuth();
+            }
+        } catch (err) {
+            // Se não conseguir conectar, assume sessão inválida por segurança
+            console.warn('Não foi possível verificar sessão:', err);
+            this._sessionValid = false;
+        }
+    }
+
+    // Limpa dados de autenticação locais (sem chamar API)
+    clearLocalAuth() {
+        this.deleteCookie('userType');
+        this.deleteCookie('userName');
+        this.deleteCookie('userCpf');
+        this.deleteCookie('isLoggedIn');
+        localStorage.removeItem('tipo');
+        this._sessionValid = false;
+        this._userData = null;
     }
 
     // Funções para gerenciar cookies
@@ -32,17 +77,30 @@ class AuthManager {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
     }
 
-    // Verifica se o usuário está logado
+    // Verifica se o usuário está logado (baseado na verificação de sessão)
     isLoggedIn() {
-        return this.getCookie('isLoggedIn') === 'true' && this.getCookie('authToken');
+        // Primeiro verifica flag de sessão validada
+        if (this._sessionValid === true) return true;
+        // Fallback para cookie local (antes da verificação assíncrona)
+        return this.getCookie('isLoggedIn') === 'true';
     }
 
     // Pega informações do usuário
     getUserInfo() {
-        if (!this.isLoggedIn()) return null;
+        // Usa dados da sessão se disponíveis
+        if (this._userData) {
+            return {
+                type: this._userData.tipo,
+                name: this.getCookie('userName') || this._userData.email,
+                cpf: this._userData.cpf,
+                email: this._userData.email
+            };
+        }
+        
+        // Fallback para cookies locais
+        if (!this.getCookie('isLoggedIn')) return null;
         
         return {
-            token: this.getCookie('authToken'),
             type: this.getCookie('userType'),
             name: this.getCookie('userName'),
             cpf: this.getCookie('userCpf')
@@ -50,17 +108,19 @@ class AuthManager {
     }
 
     // Faz logout
-    logout() {
-        // Remove cookies
-        this.deleteCookie('authToken');
-        this.deleteCookie('userType');
-        this.deleteCookie('userName');
-        this.deleteCookie('userCpf');
-        this.deleteCookie('isLoggedIn');
+    async logout() {
+        try {
+            // Chama API para limpar cookie httpOnly no servidor
+            await fetch(`${API_BASE}/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (err) {
+            console.warn('Erro ao fazer logout no servidor:', err);
+        }
         
-        // Remove localStorage
-        localStorage.removeItem('token');
-        localStorage.removeItem('tipo');
+        // Limpa cookies locais
+        this.clearLocalAuth();
         
         // Limpar carrinho
         localStorage.removeItem('carrinho');
@@ -90,12 +150,11 @@ class AuthManager {
     // HTML da navegação para usuários logados
     getLoggedInNavigation(userInfo) {
         const isAdmin = userInfo.type === 'admin';
-        // Origem do painel admin. Por enquanto usa localhost:3001. Em produção, pode ser separado.
-        const ADMIN_ORIGIN = 'http://localhost:3001';
+        // Link para o painel administrativo
         return `
             <span class="user-welcome">Olá, ${userInfo.name}!</span>
             <a href="index.html">Início</a>
-            ${isAdmin ? `<a href="${ADMIN_ORIGIN}/produtos.html" class="admin-link">Gerenciar</a>` : ''}
+            ${isAdmin ? `<a href="produtos.html" class="admin-link">Painel Admin</a>` : ''}
             <a href="carrinho.html" id="nav-carrinho">Carrinho</a>
             <a href="#" id="logout-btn" class="logout-btn">Sair</a>
         `;

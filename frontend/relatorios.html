@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatórios</title>
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="css/crud.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="relatorios-fullpage">
+  <header class="relatorios-header">
+    <h1>Gerar Relatórios</h1>
+  </header>
+
+  <main class="relatorios-container">
+    <div class="relatorios-topbar">
+      <div class="crud-selector relatorios-nav">
+        <div class="crud-controls">
+          <label for="crudSelect">Selecionar CRUD:</label>
+          <select id="crudSelect" class="crud-select">
+            <option value="produtos">Gerenciar Produtos</option>
+            <option value="pessoas">Gerenciar Pessoas</option>
+            <option value="cargos">Gerenciar Cargos</option>
+            <option value="pedidos">Gerenciar Pedidos</option>
+            <option value="relatorios" selected>Gerar Relatórios</option>
+          </select>
+        </div>
+        <div class="crud-navigation">
+          <a href="index.html" class="btn-voltar-menu">← Voltar ao Menu</a>
+        </div>
+      </div>
+      <section class="cards relatorios-cards">
+      <button id="btnRelatorioVendas" class="card">Relatório de Vendas</button>
+      <button id="btnRelatorioClientes" class="card">Relatório de Clientes</button>
+      </section>
+    </div>
+
+    <section id="secaoRelatorioVendas" class="relatorio-section" style="display:none;">
+      <h2>Relatório de Vendas</h2>
+      
+      <!-- KPIs de Vendas -->
+      <div class="kpis" id="kpisVendas">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Vendido</span>
+          <span class="kpi-value" id="kpiTotalQtd">0</span>
+          <span class="kpi-unit">itens</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Receita Total</span>
+          <span class="kpi-value" id="kpiReceitaTotal">R$ 0,00</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Produtos Ativos</span>
+          <span class="kpi-value" id="kpiProdutosAtivos">0</span>
+        </div>
+      </div>
+
+      <h3>Receita por Produto</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th>Qtd Vendida</th>
+              <th>Receita Total</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyVendas"></tbody>
+        </table>
+      </div>
+      <div class="charts">
+        <canvas id="chartVendasBar"></canvas>
+        <canvas id="chartVendasPie"></canvas>
+      </div>
+
+      <!-- Receita por Período -->
+      <h3>Receita por Período</h3>
+      <div class="filtro-periodo">
+        <label for="selectPeriodo">Agrupar por:</label>
+        <select id="selectPeriodo">
+          <option value="dia">Dia</option>
+          <option value="semana">Semana</option>
+          <option value="mes" selected>Mês</option>
+        </select>
+        <button id="btnCarregarPeriodo">Atualizar</button>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Período</th>
+              <th>Pedidos</th>
+              <th>Itens</th>
+              <th>Receita</th>
+            </tr>
+          </thead>
+          <tbody id="tbodyPeriodo"></tbody>
+        </table>
+      </div>
+      <div class="charts">
+        <canvas id="chartPeriodoLine"></canvas>
+      </div>
+    </section>
+
+    <section id="secaoRelatorioClientes" class="relatorio-section" style="display:none;">
+      <h2>Relatório de Clientes</h2>
+      
+      <!-- KPIs de Clientes -->
+      <div class="kpis" id="kpisClientes">
+        <div class="kpi-card">
+          <span class="kpi-label">Total Clientes</span>
+          <span class="kpi-value" id="kpiTotalClientes">0</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Clientes Ativos</span>
+          <span class="kpi-value" id="kpiClientesAtivos">0</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Faturamento Total</span>
+          <span class="kpi-value" id="kpiFaturamentoClientes">R$ 0,00</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Ticket Médio</span>
+          <span class="kpi-value" id="kpiTicketMedio">R$ 0,00</span>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="half">
+          <h3>Ranking de Clientes (Top Compradores)</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Pedidos</th>
+                  <th>Total Gasto</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyClientesCom"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="half">
+          <h3>Clientes sem Compras</h3>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody id="tbodyClientesSem"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="charts">
+        <canvas id="chartClientesBar"></canvas>
+        <canvas id="chartClientesPie"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <script src="assets/js/relatorios.js"></script>
+</body>
+</html>

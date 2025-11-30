@@ -59,10 +59,12 @@ function exibirProdutos(produtosParaExibir) {
         return;
     }
     
-    container.innerHTML = produtosParaExibir.map(produto => `
+    container.innerHTML = produtosParaExibir.map(produto => {
+        const imagemUrl = resolverUrlImagemPublica(produto.imagem);
+        return `
         <div class="produto-card" data-id="${produto.id}">
             <div class="produto-imagem">
-                <img src="${produto.imagem ? (produto.imagem.startsWith('img/') ? 'http://localhost:3001/' + produto.imagem : produto.imagem) : 'img/snoopy-bg.png'}" alt="${produto.nome}" onerror="this.src='img/snoopy-bg.png'">
+                <img src="${imagemUrl}" alt="${produto.nome}" onerror="this.src='img/snoopy-bg.png'">
             </div>
             <div class="produto-info">
                 <h4 class="produto-nome">${produto.nome}</h4>
@@ -80,7 +82,20 @@ function exibirProdutos(produtosParaExibir) {
                 </div>
             </div>
         </div>
-    `).join('');
+    `;}).join('');
+}
+
+function resolverUrlImagemPublica(pathImagem) {
+    if (!pathImagem) return 'img/snoopy-bg.png';
+    const trimmed = pathImagem.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+        return trimmed;
+    }
+    if (trimmed.startsWith('img/')) {
+        return `http://localhost:3001/${trimmed}`;
+    }
+    // Assume caminhos relativos fornecidos pela API (/admin-api/...)
+    return `http://localhost:3001${trimmed.startsWith('/') ? trimmed : `/${trimmed}`}`;
 }
 
 // Carregar categorias para o filtro
